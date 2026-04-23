@@ -1,9 +1,10 @@
-import { Eye, EyeOff, ImagePlus, LockKeyhole, Mail, ShieldCheck, Upload, UserRound, Users } from "lucide-react";
+import { Eye, EyeOff, ImagePlus, LockKeyhole, Mail, ShieldCheck, Upload, UserRound, Users } from "../lib/lucide-react.jsx";
 import { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Link, Navigate, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { register } from "../features/auth/authSlice";
+import { extractApiErrorMessage } from "../utils/apiError.js";
 
 const inputWrapperClass =
   "flex items-center gap-3 rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 " +
@@ -65,7 +66,7 @@ const Register = () => {
       toast.success("Registered successfully. Please log in.");
       navigate("/login");
     } catch (err) {
-      const message = err?.response?.data?.message || err?.message || "Registration failed";
+      const message = extractApiErrorMessage(err);
       setError(message);
       toast.error(message);
     } finally {

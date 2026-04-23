@@ -24,3 +24,11 @@ export const verifyJWT = asyncHandler(async(req, res, next)=>{
         throw new ApiError(401, error?.message || "Invalid access token");
     }
 })
+
+export const requireTeacher = (req, _res, next) => {
+    if (req.user?.role !== "teacher") {
+        throw new ApiError(403, "Teacher access required");
+    }
+
+    next();
+};

@@ -1,5 +1,7 @@
 import axios from "../../api/axios.js";
 
+ 
+
 const registerUser = async(data )=>{
     const res = await axios.post("/users/register" ,data);
     return res.data;

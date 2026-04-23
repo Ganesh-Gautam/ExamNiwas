@@ -1,9 +1,10 @@
-import { Eye, EyeOff, LockKeyhole, Mail, ShieldCheck } from "lucide-react";
+import { Eye, EyeOff, LockKeyhole, Mail, ShieldCheck } from "../lib/lucide-react.jsx";
 import { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Link, Navigate, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { login } from "../features/auth/authSlice.js";
+import { extractApiErrorMessage } from "../utils/apiError.js";
 
 export default function Login() {
   const dispatch = useDispatch();
@@ -28,7 +29,7 @@ export default function Login() {
       toast.success("Welcome back to ExamNiwas");
       navigate("/");
     } catch (err) {
-      const message = err?.response?.data?.message || err?.message || "Login failed";
+      const message = extractApiErrorMessage(err);
       setError(message);
       toast.error(message);
     } finally {

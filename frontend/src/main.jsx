@@ -11,6 +11,9 @@ import App from './App.jsx'
 import Home from './pages/Home.jsx'
 import Login from './pages/Login.jsx';
 import Register from './pages/Register.jsx';
+import TeacherDashboard from './pages/TeacherDashboard.jsx';
+import AddQuestions from './pages/AddQuestions.jsx';
+import TeacherRoute from './layouts/TeacherRoute.jsx';
 
 const router = createBrowserRouter([
   {
@@ -35,6 +38,22 @@ const router = createBrowserRouter([
           <AuthLayout authentication={false}>
             <Register />
           </AuthLayout>
+        )
+      },
+      {
+        path: "teacher",
+        element: (
+          <TeacherRoute>
+            <TeacherDashboard />
+          </TeacherRoute>
+        )
+      },
+      {
+        path: "teacher/tests/:testId/questions",
+        element: (
+          <TeacherRoute>
+            <AddQuestions />
+          </TeacherRoute>
         )
       },
       

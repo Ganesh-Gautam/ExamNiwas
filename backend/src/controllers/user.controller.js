@@ -81,11 +81,11 @@ const loginUser = asyncHandler(async (req, res)=>{
         $or:[{username},{email}]
    }).select("+password") 
    if(!user){
-    throw new ApiError(404, "User does not exist")
+    throw new ApiError(401, "Invalid email or password")
    }
    const isPasswordValid =await user.matchPassword(password);
    if(!isPasswordValid){
-        throw new ApiError(404, "Password is Invalid")
+        throw new ApiError(401, "Invalid email or password")
    }
 
    user.lastLogin = new Date();
