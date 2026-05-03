@@ -268,13 +268,6 @@ export const Edit3 = createIcon(
   </>
 );
 
-export const Edit2 = createIcon(
-  <>
-    <path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3Z" />
-    <path d="M3 17l9.5-9.5" />
-  </>
-);
-
 export const Save = createIcon(
   <>
     <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z" />
@@ -287,5 +280,26 @@ export const X = createIcon(
   <>
     <path d="M18 6 6 18" />
     <path d="M6 6l12 12" />
+  </>
+);
+
+export const BookOpen = createIcon(
+  <>
+    <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
+    <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
+  </>
+);
+
+export const AlertCircle = createIcon(
+  <>
+    <circle cx="12" cy="12" r="10" />
+    <line x1="12" y1="8" x2="12" y2="12" />
+    <line x1="12" y1="16" x2="12.01" y2="16" />
+  </>
+);
+
+export const Edit2 = createIcon(
+  <>
+    <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3Z" />
   </>
 );

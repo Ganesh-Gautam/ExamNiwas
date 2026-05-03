@@ -32,3 +32,11 @@ export const requireTeacher = (req, _res, next) => {
 
     next();
 };
+
+export const requireStudent = (req, _res, next) => {
+    if (req.user?.role !== "student") {
+        throw new ApiError(403, "Student access required");
+    }
+
+    next();
+};

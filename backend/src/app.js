@@ -20,9 +20,13 @@ app.use(cookieParser());
 
 import userRouter from './routes/user.routes.js';
 import testRouter from "./routes/test.routes.js";
+import studentRouter from "./routes/student.routes.js";
+import teacherRouter from "./routes/teacher.routes.js";
 
 app.use("/api/v1/users", userRouter)
 app.use("/api/v1/tests", testRouter)
+app.use("/api/v1/students", studentRouter)
+app.use("/api/v1/teachers", teacherRouter)
 
 app.use(notFoundHandler);
 app.use(errorHandler);

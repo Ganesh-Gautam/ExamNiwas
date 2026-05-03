@@ -122,7 +122,7 @@ const logoutUser = asyncHandler(async(req, res)=>{
             $unset: {
                 refreshToken: 1
             }
-        }, {new: true}
+        }, {returnDocument: "after"}
     )
     const options = {
     httpOnly: true,
@@ -204,7 +204,7 @@ const updateAccountDetails = asyncHandler(async(req,res)=>{
                 email
             }
         },
-        {new : true}
+        {returnDocument: "after"}
     ).select("-password")
 
     return res.status(200)
@@ -228,7 +228,7 @@ const updateUserAvatar = asyncHandler(async(req,res)=>{
         {
             $set:{avatar: avatar.url}
         },
-        {new:true}
+        {returnDocument: "after"}
     ).select("-password")
     await deleteFromCloudinary(oldAvatar);
     return res.status(200)

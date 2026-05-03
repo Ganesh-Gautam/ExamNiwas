@@ -1,10 +1,10 @@
-import { CircleHelp, ListChecks, Plus, Trash2, Edit3, Save, X } from "../lib/lucide-react.jsx";
+import { CircleHelp, ListChecks, Plus, Trash2, Edit3, Save, X } from "../../lib/lucide-react.jsx";
 import { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Link, useParams } from "react-router-dom";
 import toast from "react-hot-toast";
-import { addTestQuestions, fetchTeacherTests, removeTestQuestion, updateTestQuestion } from "../features/tests/testSlice.js";
-import { extractApiErrorMessage } from "../utils/apiError.js";
+import { addTestQuestions, fetchTeacherTests, removeTestQuestion, updateTestQuestion } from "../../features/tests/testSlice.js";
+import { extractApiErrorMessage } from "../../utils/apiError.js";
 
 const createEmptyQuestion = () => ({
   question: "",

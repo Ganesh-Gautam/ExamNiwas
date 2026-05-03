@@ -175,7 +175,7 @@ const updateQuestion = asyncHandler(async (req, res) => {
       correctAnswer: correctAnswer?.trim(),
       marks: Number(marks),
     },
-    { new: true, runValidators: true }
+    { returnDocument: "after", runValidators: true }
   );
 
   if (!updatedQuestion) {
@@ -214,7 +214,7 @@ const updateTest = asyncHandler(async (req, res) => {
   const updatedTest = await Test.findByIdAndUpdate(
     testId,
     updateData,
-    { new: true, runValidators: true }
+    { returnDocument: "after", runValidators: true }
   );
 
   return res

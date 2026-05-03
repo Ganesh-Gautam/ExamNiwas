@@ -1,10 +1,10 @@
-import { CalendarDays, Clock3, ClipboardList, PenSquare, PlusCircle, TimerReset, Edit2, Trash2, X, Save } from "../lib/lucide-react.jsx";
+import { CalendarDays, Clock3, ClipboardList, PenSquare, PlusCircle, TimerReset, Edit2, Trash2, X, Save, FileSpreadsheet } from "../../lib/lucide-react.jsx";
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Link, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
-import { createTeacherTest, fetchTeacherTests, updateTeacherTest, deleteTeacherTest } from "../features/tests/testSlice.js";
-import { extractApiErrorMessage } from "../utils/apiError.js";
+import { createTeacherTest, fetchTeacherTests, updateTeacherTest, deleteTeacherTest } from "../../features/tests/testSlice.js";
+import { extractApiErrorMessage } from "../../utils/apiError.js";
 
 const inputClass =
   "mt-2 w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 outline-none transition placeholder:text-zinc-400 focus:border-amber-400";
@@ -247,6 +247,13 @@ export default function TeacherDashboard() {
             <h2 className="text-2xl font-black text-zinc-950">Your Tests</h2>
             <p className="text-sm text-zinc-500">Open any test and continue adding MCQ questions.</p>
           </div>
+          <Link
+            to="/teacher/tests/results"
+            className="inline-flex items-center gap-2 rounded-full bg-zinc-950 px-4 py-2 text-sm font-semibold text-white transition hover:bg-zinc-800"
+          >
+            <FileSpreadsheet size={16} />
+            Student results
+          </Link>
         </div>
 
         {isLoading ? (
