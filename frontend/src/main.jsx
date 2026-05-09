@@ -13,6 +13,7 @@ import Login from './pages/Login.jsx';
 import Register from './pages/Register.jsx';
 import TeacherDashboard from './pages/Teacher/TeacherDashboard.jsx';
 import AddQuestions from './pages/Teacher/AddQuestions.jsx';
+import SubmissionReview from './pages/Teacher/SubmissionReview.jsx';
 import TeacherRoute from './layouts/TeacherRoute.jsx';
 import StudentDashboard from './pages/Student/StudentDashboard.jsx';
 import StudentRoute from './layouts/StudentRoute.jsx';
@@ -101,8 +102,15 @@ const router = createBrowserRouter([
             <AllStudentResult />
           </TeacherRoute>
         )
+      },
+      {
+        path: "/teacher/submissions/:submissionId",
+        element: (
+          <TeacherRoute>
+            <SubmissionReview />
+          </TeacherRoute>
+        )
       }
-      
     ]
   }
 ])

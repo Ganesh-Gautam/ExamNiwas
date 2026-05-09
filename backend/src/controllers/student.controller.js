@@ -143,7 +143,6 @@ const getTestQuestions = asyncHandler(async (req, res) => {
     throw new ApiError(403, "Test has ended");
   }
 
-  // Check if student has already submitted
   const existingSubmission = await Submission.findOne({
     studentId: req.user._id,
     testId,
@@ -157,11 +156,13 @@ const getTestQuestions = asyncHandler(async (req, res) => {
     question: 1,
     options: 1,
     marks: 1,
+    type: 1,
   });
 
   const questionsWithoutAnswers = questions.map((q) => ({
     _id: q._id,
     question: q.question,
+    type: q.type,
     options: q.options,
     marks: q.marks,
   }));
@@ -199,6 +200,10 @@ const submitAnswers = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Answers array is required");
   }
 
+  if (timeTaken === undefined || timeTaken === null) {
+    throw new ApiError(400, "Time taken is required");
+  }
+
   const test = await Test.findById(testId);
   if (!test) {
     throw new ApiError(404, "Test not found");
@@ -210,7 +215,19 @@ const submitAnswers = asyncHandler(async (req, res) => {
     throw new ApiError(403, "Test has ended");
   }
 
-  // Check if student has already submitted
+  // Validate submission time against test duration
+  const maxAllowedSeconds = test.duration * 60;
+  const timeTakenSeconds = Number(timeTaken);
+
+  // Allow 5 second buffer for network delays, but warn if submission exceeds duration
+  const toleranceSeconds = 5;
+  if (timeTakenSeconds > maxAllowedSeconds + toleranceSeconds) {
+    throw new ApiError(
+      408,
+      `Submission time exceeded. Test duration: ${test.duration} minutes. Time taken: ${Math.floor(timeTakenSeconds / 60)} minutes ${timeTakenSeconds % 60} seconds.`
+    );
+  }
+
   const existingSubmission = await Submission.findOne({
     studentId: req.user._id,
     testId,
@@ -218,22 +235,36 @@ const submitAnswers = asyncHandler(async (req, res) => {
 
   if (existingSubmission) {
     throw new ApiError(409, "You have already submitted this test");
-  }
-
-  // Get all questions for this test to verify answers
+  } 
   const allQuestions = await Question.find({ testId });
   const submittedAnswerMap = new Map(
-    answers.map((answer) => [answer.questionId?.toString(), answer.selectedAnswer])
+    answers.map((answer) => [answer.questionId?.toString(), answer])
   );
 
   let totalScore = 0;
   let totalMarks = 0;
+  let hasWrittenQuestion = false;
   const processedAnswers = [];
 
   for (const question of allQuestions) {
     totalMarks += question.marks;
+    const submittedAnswer = submittedAnswerMap.get(question._id.toString()) || {};
 
-    const selectedAnswer = submittedAnswerMap.get(question._id.toString()) || "";
+    if (question.type === "written") {
+      hasWrittenQuestion = true;
+      const answerText = String(submittedAnswer.answerText || "").trim();
+
+      processedAnswers.push({
+        questionId: question._id,
+        answerText,
+        selectedAnswer: "",
+        isCorrect: false,
+        marksObtained: 0,
+      });
+      continue;
+    }
+
+    const selectedAnswer = String(submittedAnswer.selectedAnswer || "").trim();
     const isCorrect = question.correctAnswer === selectedAnswer;
     const marksObtained = isCorrect ? question.marks : 0;
     totalScore += marksObtained;
@@ -241,23 +272,38 @@ const submitAnswers = asyncHandler(async (req, res) => {
     processedAnswers.push({
       questionId: question._id,
       selectedAnswer,
+      answerText: "",
       isCorrect,
       marksObtained,
     });
   }
 
   const percentage = totalMarks > 0 ? (totalScore / totalMarks) * 100 : 0;
+  const status = hasWrittenQuestion ? "submitted" : "evaluated";
+  const message = hasWrittenQuestion
+    ? "Test submitted successfully. Written answers will be graded by your teacher."
+    : "Answers submitted and evaluated successfully";
 
-  const submission = await Submission.create({
-    studentId: req.user._id,
-    testId,
-    answers: processedAnswers,
-    score: totalScore,
-    totalMarks,
-    percentage: Math.round(percentage * 100) / 100,
-    timeTaken: Number(timeTaken) || 0,
-    status: "evaluated",
-  });
+  let submission;
+
+  try {
+    submission = await Submission.create({
+      studentId: req.user._id,
+      testId,
+      answers: processedAnswers,
+      score: totalScore,
+      totalMarks,
+      percentage: Math.round(percentage * 100) / 100,
+      timeTaken: Number(timeTaken) || 0,
+      status,
+    });
+  } catch (error) {
+    if (error?.code === 11000) {
+      throw new ApiError(409, "You have already submitted this test");
+    }
+
+    throw error;
+  }
 
   const populatedSubmission = await Submission.findById(submission._id).populate(
     "testId",
@@ -270,7 +316,7 @@ const submitAnswers = asyncHandler(async (req, res) => {
       new ApiResponse(
         201,
         populatedSubmission,
-        "Answers submitted and evaluated successfully"
+        message
       )
     );
 });
@@ -281,11 +327,13 @@ const getStudentTestResult = asyncHandler(async (req, res) => {
   if (!mongoose.Types.ObjectId.isValid(testId)) {
     throw new ApiError(400, "Invalid test id");
   }
-
+ 
   const submission = await Submission.findOne({
     studentId: req.user._id,
     testId,
-  }).populate("testId", "title subject duration startTime endTime");
+  })
+    .populate("testId", "title subject duration startTime endTime")
+    .sort({ createdAt: -1 });
 
   if (!submission) {
     throw new ApiError(404, "Result not found for this test");
@@ -343,6 +391,36 @@ const getSubmissionDetails = asyncHandler(async (req, res) => {
     );
 });
 
+// Helper function to cleanup duplicate submissions (for admin/debug purposes)
+const cleanupDuplicateSubmissions = asyncHandler(async (req, res) => {
+  // Keep only the latest submission per student per test
+  const submissions = await Submission.find().sort({ studentId: 1, testId: 1, createdAt: -1 });
+
+  const seen = new Map();
+  const idsToDelete = [];
+
+  for (const submission of submissions) {
+    const key = `${submission.studentId.toString()}_${submission.testId.toString()}`;
+
+    if (seen.has(key)) {
+      // This is a duplicate, mark for deletion
+      idsToDelete.push(submission._id);
+    } else {
+      // First occurrence, keep it
+      seen.set(key, submission._id);
+    }
+  }
+
+  if (idsToDelete.length > 0) {
+    await Submission.deleteMany({ _id: { $in: idsToDelete } });
+    return res.status(200).json(
+      new ApiResponse(200, { deletedCount: idsToDelete.length }, `Cleaned up ${idsToDelete.length} duplicate submissions`)
+    );
+  }
+
+  return res.status(200).json(new ApiResponse(200, { deletedCount: 0 }, "No duplicate submissions found"));
+});
+
 export {
   getAvailableTests,
   getTestQuestions,
@@ -350,4 +428,5 @@ export {
   getStudentTestResult,
   getStudentResults,
   getSubmissionDetails,
+  cleanupDuplicateSubmissions,
 };

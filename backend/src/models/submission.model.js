@@ -25,6 +25,11 @@ const submissionSchema = new mongoose.Schema(
           type: String,
           default: "",
         },
+        answerText: {
+          type: String,
+          default: "",
+          trim: true,
+        },
         isCorrect: {
           type: Boolean,
           default: false,
@@ -61,7 +66,8 @@ const submissionSchema = new mongoose.Schema(
     timestamps: true,
   }
 );
- 
-submissionSchema.index({ studentId: 1, testId: 1 }, { unique: true });
+
+submissionSchema.index({ studentId: 1, testId: 1 });
+submissionSchema.index({ studentId: 1, createdAt: -1 });
 
 export const Submission = mongoose.model("Submission", submissionSchema);

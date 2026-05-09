@@ -141,8 +141,10 @@ export default function AllStudentResult() {
                       <th className="px-4 py-3 text-left font-semibold text-zinc-600">Test</th>
                       <th className="px-4 py-3 text-left font-semibold text-zinc-600">Score</th>
                       <th className="px-4 py-3 text-left font-semibold text-zinc-600">Percentage</th>
+                      <th className="px-4 py-3 text-left font-semibold text-zinc-600">Status</th>
                       <th className="px-4 py-3 text-left font-semibold text-zinc-600">Time</th>
                       <th className="px-4 py-3 text-left font-semibold text-zinc-600">Submitted</th>
+                      <th className="px-4 py-3 text-left font-semibold text-zinc-600">Action</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-zinc-100">
@@ -163,8 +165,25 @@ export default function AllStudentResult() {
                           </span>
                         </td>
                         <td className="px-4 py-4 align-top text-zinc-700">{result.percentage}%</td>
+                        <td className="px-4 py-4 align-top">
+                          <span className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                            result.status === "submitted"
+                              ? "bg-amber-100 text-amber-700"
+                              : "bg-emerald-100 text-emerald-700"
+                          }`}>
+                            {result.status === "submitted" ? "Pending" : "Evaluated"}
+                          </span>
+                        </td>
                         <td className="px-4 py-4 align-top text-zinc-700">{Math.round((Number(result.timeTaken) || 0) / 60)} mins</td>
                         <td className="px-4 py-4 align-top text-zinc-700">{new Date(result.createdAt).toLocaleString()}</td>
+                        <td className="px-4 py-4 align-top text-zinc-700">
+                          <Link
+                            to={`/teacher/submissions/${result._id}`}
+                            className="inline-flex items-center rounded-full bg-slate-900 px-3 py-2 text-xs font-semibold text-white transition hover:bg-slate-800"
+                          >
+                            Review
+                          </Link>
+                        </td>
                       </tr>
                     ))}
                   </tbody>

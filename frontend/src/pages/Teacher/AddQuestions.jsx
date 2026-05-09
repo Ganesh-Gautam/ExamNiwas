@@ -7,6 +7,7 @@ import { addTestQuestions, fetchTeacherTests, removeTestQuestion, updateTestQues
 import { extractApiErrorMessage } from "../../utils/apiError.js";
 
 const createEmptyQuestion = () => ({
+  type: "mcq",
   question: "",
   options: ["", "", "", ""],
   correctAnswer: "",
@@ -68,32 +69,31 @@ export default function AddQuestions() {
   const validateQuestions = () => {
     for (let i = 0; i < questions.length; i++) {
       const q = questions[i];
- 
       if (!q.question?.trim()) {
         toast.error(`Question ${i + 1}: Question text is required`);
         return false;
-      } 
-      const nonEmptyOptions = q.options.filter((opt) => opt.trim().length > 0);
-      if (nonEmptyOptions.length < 2) {
-        toast.error(`Question ${i + 1}: At least 2 non-empty options are required`);
-        return false;
       }
 
-      // Check if correct answer is selected and valid
-      if (!q.correctAnswer?.trim()) {
-        toast.error(`Question ${i + 1}: Please select a correct answer`);
-        return false;
+      if (q.type === "mcq") {
+        const nonEmptyOptions = q.options.filter((opt) => opt.trim().length > 0);
+        if (nonEmptyOptions.length < 2) {
+          toast.error(`Question ${i + 1}: At least 2 non-empty options are required`);
+          return false;
+        }
+
+        if (!q.correctAnswer?.trim()) {
+          toast.error(`Question ${i + 1}: Please select a correct answer`);
+          return false;
+        }
+
+        if (!q.options.some((opt) => opt.trim() === q.correctAnswer.trim())) {
+          toast.error(
+            `Question ${i + 1}: Correct answer must match one of the provided options`
+          );
+          return false;
+        }
       }
 
-      // Check if correct answer matches one of the options
-      if (!q.options.some((opt) => opt.trim() === q.correctAnswer.trim())) {
-        toast.error(
-          `Question ${i + 1}: Correct answer must match one of the provided options`
-        );
-        return false;
-      }
-
-      // Check if marks is valid
       const marksNum = Number(q.marks);
       if (isNaN(marksNum) || marksNum < 1) {
         toast.error(`Question ${i + 1}: Marks must be at least 1`);
@@ -106,13 +106,20 @@ export default function AddQuestions() {
   const handleSubmit = async (event) => {
     event.preventDefault();
 
-    // Validate questions before sending
     if (!validateQuestions()) {
       return;
     }
 
     try {
-      await dispatch(addTestQuestions({ testId, questions })).unwrap();
+      const preparedQuestions = questions.map((question) => ({
+        type: question.type,
+        question: question.question?.trim(),
+        marks: Number(question.marks),
+        options: question.type === "mcq" ? question.options : [],
+        correctAnswer: question.type === "mcq" ? question.correctAnswer?.trim() : undefined,
+      }));
+
+      await dispatch(addTestQuestions({ testId, questions: preparedQuestions })).unwrap();
       toast.success("Questions saved to the database");
       setQuestions([createEmptyQuestion()]);
     } catch (error) {
@@ -134,8 +141,9 @@ export default function AddQuestions() {
   const handleEditExistingQuestion = (question) => {
     setEditingQuestionId(question._id);
     setEditingQuestion({
+      type: question.type || "mcq",
       question: question.question,
-      options: [...question.options],
+      options: question.options ? [...question.options] : ["", "", "", ""],
       correctAnswer: question.correctAnswer,
       marks: question.marks,
     });
@@ -154,19 +162,23 @@ export default function AddQuestions() {
       toast.error("Question text is required");
       return;
     }
-    const nonEmptyOptions = editingQuestion.options.filter((opt) => opt.trim().length > 0);
-    if (nonEmptyOptions.length < 2) {
-      toast.error("At least 2 non-empty options are required");
-      return;
+
+    if (editingQuestion.type === "mcq") {
+      const nonEmptyOptions = editingQuestion.options.filter((opt) => opt.trim().length > 0);
+      if (nonEmptyOptions.length < 2) {
+        toast.error("At least 2 non-empty options are required");
+        return;
+      }
+      if (!editingQuestion.correctAnswer?.trim()) {
+        toast.error("Please select a correct answer");
+        return;
+      }
+      if (!editingQuestion.options.some((opt) => opt.trim() === editingQuestion.correctAnswer.trim())) {
+        toast.error("Correct answer must match one of the provided options");
+        return;
+      }
     }
-    if (!editingQuestion.correctAnswer?.trim()) {
-      toast.error("Please select a correct answer");
-      return;
-    }
-    if (!editingQuestion.options.some((opt) => opt.trim() === editingQuestion.correctAnswer.trim())) {
-      toast.error("Correct answer must match one of the provided options");
-      return;
-    }
+
     const marksNum = Number(editingQuestion.marks);
     if (isNaN(marksNum) || marksNum < 1) {
       toast.error("Marks must be at least 1");
@@ -174,10 +186,18 @@ export default function AddQuestions() {
     }
 
     try {
+      const questionData = {
+        type: editingQuestion.type,
+        question: editingQuestion.question?.trim(),
+        marks: Number(editingQuestion.marks),
+        options: editingQuestion.type === "mcq" ? editingQuestion.options : [],
+        correctAnswer: editingQuestion.type === "mcq" ? editingQuestion.correctAnswer?.trim() : undefined,
+      };
+
       await dispatch(updateTestQuestion({
         testId,
         questionId: editingQuestionId,
-        questionData: editingQuestion
+        questionData,
       })).unwrap();
       toast.success("Question updated successfully");
       setEditingQuestionId(null);
@@ -434,7 +454,9 @@ export default function AddQuestions() {
                 </div>
                 <div>
                   <h2 className="text-xl font-black text-zinc-950">Question {questionIndex + 1}</h2>
-                  <p className="text-sm text-zinc-500">Type: MCQ</p>
+                  <p className="text-sm text-zinc-500">
+                    {question.type === "mcq" ? "MCQ Question" : "Written Question"}
+                  </p>
                 </div>
               </div>
 
@@ -446,6 +468,32 @@ export default function AddQuestions() {
                 <Trash2 size={16} />
                 Remove
               </button>
+            </div>
+
+            <div className="mt-4 grid gap-4 md:grid-cols-[1fr_180px]">
+              <label>
+                <span className="text-sm font-semibold text-zinc-700">Question type</span>
+                <select
+                  className={inputClass}
+                  value={question.type}
+                  onChange={(event) => updateQuestion(questionIndex, "type", event.target.value)}
+                >
+                  <option value="mcq">MCQ</option>
+                  <option value="written">Written</option>
+                </select>
+              </label>
+
+              <label>
+                <span className="text-sm font-semibold text-zinc-700">Marks</span>
+                <input
+                  className={inputClass}
+                  type="number"
+                  min="1"
+                  value={question.marks}
+                  onChange={(event) => updateQuestion(questionIndex, "marks", event.target.value)}
+                  required
+                />
+              </label>
             </div>
 
             <div className="mt-6 grid gap-5">
@@ -460,51 +508,59 @@ export default function AddQuestions() {
                 />
               </label>
 
-              <div className="grid gap-4 md:grid-cols-2">
-                {question.options.map((option, optionIndex) => (
-                  <label key={`option-${questionIndex}-${optionIndex}`}>
-                    <span className="text-sm font-semibold text-zinc-700">Option {optionIndex + 1}</span>
-                    <input
-                      className={inputClass}
-                      value={option}
-                      onChange={(event) => updateOption(questionIndex, optionIndex, event.target.value)}
-                      placeholder={`Enter option ${optionIndex + 1}`}
-                      required
-                    />
-                  </label>
-                ))}
-              </div>
-
-              <div className="grid gap-5 md:grid-cols-[1fr_180px]">
-                <label>
-                  <span className="text-sm font-semibold text-zinc-700">Correct answer</span>
-                  <select
-                    className={inputClass}
-                    value={question.correctAnswer}
-                    onChange={(event) => updateQuestion(questionIndex, "correctAnswer", event.target.value)}
-                    required
-                  >
-                    <option value="">Select correct answer</option>
+              {question.type === "mcq" ? (
+                <>
+                  <div className="grid gap-4 md:grid-cols-2">
                     {question.options.map((option, optionIndex) => (
-                      <option key={`correct-${questionIndex}-${optionIndex}`} value={option}>
-                        {option || `Option ${optionIndex + 1}`}
-                      </option>
+                      <label key={`option-${questionIndex}-${optionIndex}`}>
+                        <span className="text-sm font-semibold text-zinc-700">Option {optionIndex + 1}</span>
+                        <input
+                          className={inputClass}
+                          value={option}
+                          onChange={(event) => updateOption(questionIndex, optionIndex, event.target.value)}
+                          placeholder={`Enter option ${optionIndex + 1}`}
+                          required
+                        />
+                      </label>
                     ))}
-                  </select>
-                </label>
+                  </div>
 
-                <label>
-                  <span className="text-sm font-semibold text-zinc-700">Marks</span>
-                  <input
-                    className={inputClass}
-                    type="number"
-                    min="1"
-                    value={question.marks}
-                    onChange={(event) => updateQuestion(questionIndex, "marks", event.target.value)}
-                    required
-                  />
-                </label>
-              </div>
+                  <div className="grid gap-5 md:grid-cols-[1fr_180px]">
+                    <label>
+                      <span className="text-sm font-semibold text-zinc-700">Correct answer</span>
+                      <select
+                        className={inputClass}
+                        value={question.correctAnswer}
+                        onChange={(event) => updateQuestion(questionIndex, "correctAnswer", event.target.value)}
+                        required
+                      >
+                        <option value="">Select correct answer</option>
+                        {question.options.map((option, optionIndex) => (
+                          <option key={`correct-${questionIndex}-${optionIndex}`} value={option}>
+                            {option || `Option ${optionIndex + 1}`}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+
+                    <label>
+                      <span className="text-sm font-semibold text-zinc-700">Marks</span>
+                      <input
+                        className={inputClass}
+                        type="number"
+                        min="1"
+                        value={question.marks}
+                        onChange={(event) => updateQuestion(questionIndex, "marks", event.target.value)}
+                        required
+                      />
+                    </label>
+                  </div>
+                </>
+              ) : (
+                <div className="rounded-3xl border border-dashed border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900">
+                  This is a written question. Students will submit a free-text answer and it will be graded manually by a teacher.
+                </div>
+              )}
             </div>
           </section>
         ))}

@@ -46,6 +46,7 @@ export default function TestResult() {
 
   const submission = currentResult?.submission;
   const answers = currentResult?.answers ?? [];
+  const isPending = submission?.status === "submitted";
 
   if (!submission) {
     return (
@@ -65,17 +66,26 @@ export default function TestResult() {
 
   return (
     <div className="space-y-6">
-      <section className="rounded-4xl border border-emerald-200/80 bg-[linear-gradient(135deg,rgba(240,253,250,0.96),rgba(255,255,255,0.96)),radial-gradient(circle_at_top_left,rgba(16,185,129,0.16),transparent_30%)] p-8 shadow-[0_24px_70px_rgba(15,118,110,0.1)]">
+      <section
+          className={`rounded-4xl border border-emerald-200/80 p-8 shadow-[0_24px_70px_rgba(15,118,110,0.1)]
+          ${
+            isPending
+              ? "bg-[linear-gradient(135deg,rgba(254,242,242,0.96),rgba(255,255,255,0.96)),radial-gradient(circle_at_top_left,rgba(239,68,68,0.16),transparent_30%)]"
+              : "bg-[linear-gradient(135deg,rgba(240,253,250,0.96),rgba(255,255,255,0.96)),radial-gradient(circle_at_top_left,rgba(16,185,129,0.16),transparent_30%)]"
+          }`}
+        >
         <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <p className="text-sm font-semibold uppercase tracking-[0.3em] text-emerald-700">Test Result</p>
             <h1 className="mt-3 font-['Georgia'] text-4xl font-bold text-zinc-950">{submission.testId?.title}</h1>
             <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-600">
-              Your evaluation is complete. Review the score summary and each answer below.
+              {isPending
+                ? "Your written answers are pending teacher evaluation. Review what you've submitted and check back when grading is complete."
+                : "Your evaluation is complete. Review the score summary and each answer below."}
             </p>
           </div>
 
-          <div className="rounded-[2rem] border border-emerald-200 bg-white/90 px-6 py-5 text-center">
+          <div className="rounded-4xl border border-emerald-200 bg-white/90 px-6 py-5 text-center">
             <p className="text-xs uppercase tracking-[0.25em] text-emerald-700">Score</p>
             <div className="mt-2 flex items-end justify-center gap-2">
               <span className="text-4xl font-black text-emerald-700">{submission.score}</span>
@@ -131,7 +141,14 @@ export default function TestResult() {
 
         <div className="mt-6 space-y-4">
           {answers.map((answer, index) => {
-            const wasSkipped = !answer.selectedAnswer;
+            const wasSkipped = answer.type === "mcq" ? !answer.selectedAnswer : !answer.answerText?.trim();
+            const statusLabel = answer.type === "written"
+              ? "Evaluating..."
+              : answer.isCorrect
+                ? "Correct"
+                : wasSkipped
+                  ? "Skipped"
+                  : "Incorrect";
 
             return (
               <article
@@ -145,44 +162,59 @@ export default function TestResult() {
                   </div>
                   <div
                     className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                      answer.isCorrect
-                        ? "bg-emerald-100 text-emerald-700"
-                        : "bg-rose-100 text-rose-700"
+                      answer.type === "written"
+                        ? isPending
+                          ? "bg-amber-100 text-amber-700"
+                          : "bg-emerald-100 text-emerald-700"
+                        : answer.isCorrect
+                          ? "bg-emerald-100 text-emerald-700"
+                          : "bg-rose-100 text-rose-700"
                     }`}
                   >
-                    {answer.isCorrect ? "Correct" : wasSkipped ? "Skipped" : "Incorrect"}
+                    {statusLabel}
                   </div>
                 </div>
 
-                <div className="mt-5 grid gap-3 md:grid-cols-2">
-                  {answer.options?.map((option, optionIndex) => {
-                    const isCorrectOption = option === answer.correctAnswer;
-                    const isChosenOption = option === answer.selectedAnswer;
+                {answer.type === "mcq" ? (
+                  <div className="mt-5 grid gap-3 md:grid-cols-2">
+                    {answer.options?.map((option, optionIndex) => {
+                      const isCorrectOption = option === answer.correctAnswer;
+                      const isChosenOption = option === answer.selectedAnswer;
 
-                    return (
-                      <div
-                        key={`${answer.questionId}-${optionIndex}`}
-                        className={`rounded-2xl border px-4 py-3 text-sm ${
-                          isCorrectOption
-                            ? "border-emerald-200 bg-emerald-50 text-emerald-900"
-                            : isChosenOption
-                              ? "border-rose-200 bg-rose-50 text-rose-800"
-                              : "border-zinc-200 bg-white text-zinc-700"
-                        }`}
-                      >
-                        <span className="font-semibold">{String.fromCharCode(65 + optionIndex)}.</span> {option}
-                      </div>
-                    );
-                  })}
-                </div>
+                      return (
+                        <div
+                          key={`${answer.questionId}-${optionIndex}`}
+                          className={`rounded-2xl border px-4 py-3 text-sm ${
+                            isCorrectOption
+                              ? "border-emerald-200 bg-emerald-50 text-emerald-900"
+                              : isChosenOption
+                                ? "border-rose-200 bg-rose-50 text-rose-800"
+                                : "border-zinc-200 bg-white text-zinc-700"
+                          }`}
+                        >
+                          <span className="font-semibold">{String.fromCharCode(65 + optionIndex)}.</span> {option}
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="mt-5 rounded-2xl border border-zinc-200 bg-white px-4 py-4 text-sm text-zinc-700">
+                    <p className="font-semibold text-zinc-900">Answer text</p>
+                    <p className="mt-2 whitespace-pre-line">{answer.answerText || "No answer provided."}</p>
+                  </div>
+                )}
 
                 <div className="mt-4 flex flex-wrap gap-3 text-sm">
-                  <div className="rounded-full bg-white px-4 py-2 text-zinc-700">
-                    Your answer: <span className="font-semibold">{answer.selectedAnswer || "Not answered"}</span>
-                  </div>
-                  <div className="rounded-full bg-white px-4 py-2 text-zinc-700">
-                    Correct answer: <span className="font-semibold">{answer.correctAnswer}</span>
-                  </div>
+                  {answer.type === "mcq" ? (
+                    <>
+                      <div className="rounded-full bg-white px-4 py-2 text-zinc-700">
+                        Your answer: <span className="font-semibold">{answer.selectedAnswer || "Not answered"}</span>
+                      </div>
+                      <div className="rounded-full bg-white px-4 py-2 text-zinc-700">
+                        Correct answer: <span className="font-semibold">{answer.correctAnswer}</span>
+                      </div>
+                    </>
+                  ) : null}
                   <div className="rounded-full bg-white px-4 py-2 text-zinc-700">
                     Marks: <span className="font-semibold">{answer.marksObtained} / {answer.marks}</span>
                   </div>

@@ -45,10 +45,14 @@ const addQuestions = asyncHandler(async (req, res) => {
 
   const preparedQuestions = questions.map((questionItem) => ({
     testId,
-    type: "mcq",
+    type: questionItem.type === "written" ? "written" : "mcq",
     question: questionItem.question?.trim(),
-    options: Array.isArray(questionItem.options) ? questionItem.options : [],
-    correctAnswer: questionItem.correctAnswer?.trim(),
+    options:
+      questionItem.type === "mcq" && Array.isArray(questionItem.options)
+        ? questionItem.options
+        : [],
+    correctAnswer:
+      questionItem.type === "mcq" ? questionItem.correctAnswer?.trim() : undefined,
     marks: Number(questionItem.marks),
   }));
 
@@ -152,7 +156,7 @@ const removeQuestion = asyncHandler(async (req, res) => {
 
 const updateQuestion = asyncHandler(async (req, res) => {
   const { testId, questionId } = req.params;
-  const { question, options, correctAnswer, marks } = req.body;
+  const { type, question, options, correctAnswer, marks } = req.body;
 
   if (!mongoose.Types.ObjectId.isValid(testId)) {
     throw new ApiError(400, "Invalid test id");
@@ -170,9 +174,11 @@ const updateQuestion = asyncHandler(async (req, res) => {
   const updatedQuestion = await Question.findOneAndUpdate(
     { _id: questionId, testId },
     {
+      type: type === "written" ? "written" : "mcq",
       question: question?.trim(),
-      options: Array.isArray(options) ? options : [],
-      correctAnswer: correctAnswer?.trim(),
+      options:
+        type === "mcq" && Array.isArray(options) ? options : [],
+      correctAnswer: type === "mcq" ? correctAnswer?.trim() : undefined,
       marks: Number(marks),
     },
     { returnDocument: "after", runValidators: true }

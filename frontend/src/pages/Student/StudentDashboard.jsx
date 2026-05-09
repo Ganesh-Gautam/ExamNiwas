@@ -51,6 +51,7 @@ export default function StudentDashboard() {
             >
               <p className="text-sm text-zinc-500">Tests attempted</p>
               <p className="mt-2 text-3xl font-black text-zinc-950">{studentResults.length}</p>
+              <p className="text-xs text-zinc-500">Click to see all your results</p>
             </Link>
           </div>
         </div>

@@ -7,6 +7,8 @@ import {
   getStudentResults,
   getTeacherStudentResults,
   getSubmissionDetails,
+  getTeacherSubmissionDetails,
+  evaluateSubmission,
 } from "./submissionService.js";
 
 const fetchAvailableTests = createAsyncThunk(
@@ -55,6 +57,20 @@ const fetchSubmissionDetails = createAsyncThunk(
   "submissions/fetchSubmissionDetails",
   async (data) => {
     return await getSubmissionDetails(data);
+  }
+);
+
+const fetchTeacherSubmissionDetails = createAsyncThunk(
+  "submissions/fetchTeacherSubmissionDetails",
+  async (data) => {
+    return await getTeacherSubmissionDetails(data);
+  }
+);
+
+const evaluateTeacherSubmission = createAsyncThunk(
+  "submissions/evaluateTeacherSubmission",
+  async (data) => {
+    return await evaluateSubmission(data);
   }
 );
 
@@ -171,6 +187,30 @@ const submissionSlice = createSlice({
       .addCase(fetchSubmissionDetails.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.error?.message || "Could not fetch submission details";
+      })
+      .addCase(fetchTeacherSubmissionDetails.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(fetchTeacherSubmissionDetails.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.submissionDetails = action.payload.data;
+      })
+      .addCase(fetchTeacherSubmissionDetails.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.error?.message || "Could not fetch teacher submission details";
+      })
+      .addCase(evaluateTeacherSubmission.pending, (state) => {
+        state.isSaving = true;
+        state.error = null;
+      })
+      .addCase(evaluateTeacherSubmission.fulfilled, (state, action) => {
+        state.isSaving = false;
+        state.submissionDetails = action.payload.data;
+      })
+      .addCase(evaluateTeacherSubmission.rejected, (state, action) => {
+        state.isSaving = false;
+        state.error = action.error?.message || "Could not evaluate submission";
       });
   },
 });
@@ -185,5 +225,7 @@ export {
   fetchStudentResults,
   fetchTeacherStudentResults,
   fetchSubmissionDetails,
+  fetchTeacherSubmissionDetails,
+  evaluateTeacherSubmission,
 };
 export default submissionSlice.reducer;

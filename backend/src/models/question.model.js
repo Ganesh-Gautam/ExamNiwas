@@ -10,7 +10,7 @@ const questionSchema = new mongoose.Schema(
     },
     type: {
       type: String,
-      enum: ["mcq"],
+      enum: ["mcq", "written"],
       default: "mcq",
       required: true,
     },
@@ -21,19 +21,27 @@ const questionSchema = new mongoose.Schema(
     },
     options: {
       type: [String],
-      required: true,
+      default: [],
       validate: {
-        validator: (options) =>
-          Array.isArray(options) &&
-          options.length >= 2 &&
-          options.every((option) => typeof option === "string" && option.trim().length > 0),
+        validator: function (options) {
+          if (this.type !== "mcq") {
+            return true;
+          }
+          return (
+            Array.isArray(options) &&
+            options.length >= 2 &&
+            options.every((option) => typeof option === "string" && option.trim().length > 0)
+          );
+        },
         message: "MCQ questions need at least two non-empty options",
       },
     },
     correctAnswer: {
       type: String,
-      required: [true, "Correct answer is required"],
       trim: true,
+      required: function () {
+        return this.type === "mcq";
+      },
     },
     marks: {
       type: Number,
@@ -51,7 +59,17 @@ questionSchema.pre("validate", function () {
     this.options = this.options.map((option) => option.trim());
   }
 
-  if (this.correctAnswer && Array.isArray(this.options) && !this.options.includes(this.correctAnswer.trim())) {
+  if (this.type === "written") {
+    this.options = [];
+    this.correctAnswer = undefined;
+  }
+
+  if (
+    this.type === "mcq" &&
+    this.correctAnswer &&
+    Array.isArray(this.options) &&
+    !this.options.includes(this.correctAnswer.trim())
+  ) {
     this.invalidate("correctAnswer", "Correct answer must match one of the options");
   }
 });

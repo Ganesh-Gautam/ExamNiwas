@@ -38,6 +38,18 @@ const getSubmissionDetails = async ({ submissionId }) => {
   return response.data;
 };
 
+const getTeacherSubmissionDetails = async ({ submissionId }) => {
+  const response = await axios.get(`/teachers/submissions/${submissionId}`);
+  return response.data;
+};
+
+const evaluateSubmission = async ({ submissionId, answers }) => {
+  const response = await axios.put(`/teachers/submissions/${submissionId}/evaluate`, {
+    answers,
+  });
+  return response.data;
+};
+
 export {
   getAvailableTests,
   getTestQuestions,
@@ -46,4 +58,6 @@ export {
   getStudentResults,
   getTeacherStudentResults,
   getSubmissionDetails,
+  getTeacherSubmissionDetails,
+  evaluateSubmission,
 };
