@@ -1,9 +1,10 @@
-import { AlertCircle, BadgeCheck, CalendarDays, ClipboardList, Clock3, FileSpreadsheet, Users } from "../../lib/lucide-react.jsx";
+import { AlertCircle, BadgeCheck, FileSpreadsheet } from "../../lib/lucide-react.jsx";
 import { useEffect, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Link } from "react-router-dom";
 import toast from "react-hot-toast";
 import { fetchTeacherStudentResults } from "../../features/submissions/submissionSlice.js";
+import { EmptyState, PageHero, SectionCard, StatCard, primaryButtonClass, secondaryButtonClass, pageWrapClass } from "../../components/common/ui.jsx";
 
 export default function AllStudentResult() {
   const dispatch = useDispatch();
@@ -21,10 +22,9 @@ export default function AllStudentResult() {
 
   const groupedByTest = useMemo(() => {
     return teacherResults.reduce((accumulator, result) => {
-      const testId = result.testId?._id || "unknown";
-
-      if (!accumulator[testId]) {
-        accumulator[testId] = {
+      const key = result.testId?._id || "unknown";
+      if (!accumulator[key]) {
+        accumulator[key] = {
           testTitle: result.testId?.title || "Untitled test",
           subject: result.testId?.subject || "Unknown subject",
           attempts: 0,
@@ -33,10 +33,9 @@ export default function AllStudentResult() {
         };
       }
 
-      accumulator[testId].attempts += 1;
-      accumulator[testId].averagePercentage += Number(result.percentage) || 0;
-      accumulator[testId].topScore = Math.max(accumulator[testId].topScore, Number(result.score) || 0);
-
+      accumulator[key].attempts += 1;
+      accumulator[key].averagePercentage += Number(result.percentage) || 0;
+      accumulator[key].topScore = Math.max(accumulator[key].topScore, Number(result.score) || 0);
       return accumulator;
     }, {});
   }, [teacherResults]);
@@ -46,141 +45,102 @@ export default function AllStudentResult() {
     averagePercentage: summary.attempts ? (summary.averagePercentage / summary.attempts).toFixed(1) : "0.0",
   }));
 
+  const globalAverage = teacherResults.length
+    ? (
+        teacherResults.reduce((sum, result) => sum + (Number(result.percentage) || 0), 0) /
+        teacherResults.length
+      ).toFixed(1)
+    : "0.0";
+
   return (
-    <div className="space-y-6">
-      <section className="rounded-4xl border border-amber-200/80 bg-[linear-gradient(135deg,rgba(255,251,235,0.96),rgba(255,255,255,0.96)),radial-gradient(circle_at_top_right,rgba(251,191,36,0.15),transparent_30%)] p-8 shadow-[0_24px_70px_rgba(120,53,15,0.1)]">
-        <p className="text-sm font-semibold uppercase tracking-[0.3em] text-amber-700">Student Performance</p>
-        <h1 className="mt-3 font-['Georgia'] text-4xl font-bold text-zinc-950">All student results</h1>
-        <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-600">
-          View every submission for your tests, compare performance across papers, and keep a quick eye on attempt counts.
-        </p>
+    <div className={`${pageWrapClass} page-enter`}>
+      <PageHero
+        eyebrow="Teacher Analytics"
+        title="All student results"
+        description="Review submission volume, compare test performance, and jump into detailed paper evaluation."
+        accent="amber"
+        actions={<Link to="/teacher" className={primaryButtonClass}><FileSpreadsheet size={16} />Dashboard</Link>}
+        stats={[
+          <StatCard key="submissions" label="Submissions" value={teacherResults.length} hint="All recorded attempts." />,
+          <StatCard key="tests" label="Tests Attempted" value={testSummaries.length} hint="Unique tests with submissions." />,
+          <StatCard key="average" label="Average Score" value={`${globalAverage}%`} hint="Across all submitted results." />,
+        ]}
+      />
 
-        <div className="mt-6 grid gap-4 md:grid-cols-3">
-          <div className="rounded-3xl border border-white/80 bg-white/80 p-4">
-            <p className="text-xs uppercase tracking-[0.25em] text-zinc-500">Submissions</p>
-            <p className="mt-2 text-3xl font-black text-zinc-950">{teacherResults.length}</p>
-          </div>
-          <div className="rounded-3xl border border-white/80 bg-white/80 p-4">
-            <p className="text-xs uppercase tracking-[0.25em] text-zinc-500">Tests Attempted</p>
-            <p className="mt-2 text-3xl font-black text-zinc-950">{testSummaries.length}</p>
-          </div>
-          <div className="rounded-3xl border border-white/80 bg-white/80 p-4">
-            <p className="text-xs uppercase tracking-[0.25em] text-zinc-500">Avg Percentage</p>
-            <p className="mt-2 text-3xl font-black text-zinc-950">
-              {teacherResults.length
-                ? (
-                    teacherResults.reduce((sum, result) => sum + (Number(result.percentage) || 0), 0) /
-                    teacherResults.length
-                  ).toFixed(1)
-                : "0.0"}
-              %
-            </p>
-          </div>
-        </div>
-      </section>
-
-      <section className="rounded-4xl border border-white/80 bg-white/90 p-6 shadow-[0_20px_70px_rgba(15,23,42,0.08)]">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h2 className="text-2xl font-black text-zinc-950">Results by Test</h2>
-            <p className="text-sm text-zinc-500">A quick summary of how each test is performing.</p>
-          </div>
-          <Link
-            to="/teacher"
-            className="inline-flex items-center gap-2 rounded-full bg-zinc-950 px-4 py-2 text-sm font-semibold text-white transition hover:bg-zinc-800"
-          >
-            <FileSpreadsheet size={16} />
-            Dashboard
-          </Link>
-        </div>
-
+      <SectionCard title="Results by Test" >
         {isLoading ? (
-          <div className="mt-6 rounded-3xl border border-dashed border-zinc-200 bg-zinc-50 px-6 py-10 text-sm text-zinc-500">
+          <div className="rounded-[1.75rem] border border-dashed border-slate-200 bg-slate-50/80 px-6 py-10 text-sm text-slate-500">
             Loading student results...
           </div>
         ) : teacherResults.length === 0 ? (
-          <div className="mt-6 rounded-3xl border border-dashed border-zinc-200 bg-zinc-50 px-6 py-10 text-center">
-            <AlertCircle size={32} className="mx-auto mb-2 text-zinc-400" />
-            <p className="text-sm text-zinc-500">No student submissions have been recorded for your tests yet.</p>
-          </div>
+          <EmptyState icon={<AlertCircle size={24} />} title="No student submissions yet" description="As students submit tests, they will appear here for review and analysis." />
         ) : (
           <>
-            <div className="mt-6 grid gap-4 xl:grid-cols-2">
+            <div className="grid gap-4 xl:grid-cols-2">
               {testSummaries.map((summary) => (
-                <article
-                  key={`${summary.subject}-${summary.testTitle}`}
-                  className="rounded-[1.75rem] border border-zinc-200 bg-[linear-gradient(180deg,#fffdf8_0%,#ffffff_100%)] p-5 shadow-[0_18px_45px_rgba(15,23,42,0.05)]"
-                >
+                <article key={`${summary.subject}-${summary.testTitle}`} className="rounded-[1.75rem] border border-white/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.95),rgba(248,250,252,0.88))] p-5 shadow-[0_18px_45px_rgba(15,23,42,0.05)]">
                   <p className="text-xs font-semibold uppercase tracking-[0.25em] text-amber-700">{summary.subject}</p>
-                  <h3 className="mt-2 text-2xl font-black text-zinc-950">{summary.testTitle}</h3>
-
-                  <div className="mt-5 grid gap-3 text-sm text-zinc-600 sm:grid-cols-3">
-                    <div className="rounded-2xl bg-zinc-50 px-4 py-3">
-                      <p className="text-xs uppercase tracking-[0.2em] text-zinc-500">Attempts</p>
-                      <p className="mt-2 text-xl font-black text-zinc-950">{summary.attempts}</p>
+                  <h3 className="mt-2 text-2xl font-semibold tracking-[-0.03em] text-slate-950">{summary.testTitle}</h3>
+                  <div className="mt-5 grid gap-3 sm:grid-cols-3">
+                    <div className="rounded-[1.25rem] bg-slate-50 px-4 py-3">
+                      <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Attempts</p>
+                      <p className="mt-2 text-xl font-semibold text-slate-950">{summary.attempts}</p>
                     </div>
-                    <div className="rounded-2xl bg-zinc-50 px-4 py-3">
-                      <p className="text-xs uppercase tracking-[0.2em] text-zinc-500">Average</p>
-                      <p className="mt-2 text-xl font-black text-zinc-950">{summary.averagePercentage}%</p>
+                    <div className="rounded-[1.25rem] bg-slate-50 px-4 py-3">
+                      <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Average</p>
+                      <p className="mt-2 text-xl font-semibold text-slate-950">{summary.averagePercentage}%</p>
                     </div>
-                    <div className="rounded-2xl bg-zinc-50 px-4 py-3">
-                      <p className="text-xs uppercase tracking-[0.2em] text-zinc-500">Top Score</p>
-                      <p className="mt-2 text-xl font-black text-zinc-950">{summary.topScore}</p>
+                    <div className="rounded-[1.25rem] bg-slate-50 px-4 py-3">
+                      <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Top Score</p>
+                      <p className="mt-2 text-xl font-semibold text-slate-950">{summary.topScore}</p>
                     </div>
                   </div>
                 </article>
               ))}
             </div>
 
-            <div className="mt-8 overflow-hidden rounded-3xl border border-zinc-200">
+            <div className="mt-8 overflow-hidden rounded-[1.75rem] border border-slate-200 bg-white">
               <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-zinc-200 bg-white text-sm">
-                  <thead className="bg-zinc-50">
+                <table className="min-w-full divide-y divide-slate-200 text-sm">
+                  <thead className="bg-slate-50">
                     <tr>
-                      <th className="px-4 py-3 text-left font-semibold text-zinc-600">Student</th>
-                      <th className="px-4 py-3 text-left font-semibold text-zinc-600">Test</th>
-                      <th className="px-4 py-3 text-left font-semibold text-zinc-600">Score</th>
-                      <th className="px-4 py-3 text-left font-semibold text-zinc-600">Percentage</th>
-                      <th className="px-4 py-3 text-left font-semibold text-zinc-600">Status</th>
-                      <th className="px-4 py-3 text-left font-semibold text-zinc-600">Time</th>
-                      <th className="px-4 py-3 text-left font-semibold text-zinc-600">Submitted</th>
-                      <th className="px-4 py-3 text-left font-semibold text-zinc-600">Action</th>
+                      <th className="px-4 py-3 text-left font-semibold text-slate-600">Student</th>
+                      <th className="px-4 py-3 text-left font-semibold text-slate-600">Test</th>
+                      <th className="px-4 py-3 text-left font-semibold text-slate-600">Score</th>
+                      <th className="px-4 py-3 text-left font-semibold text-slate-600">Percentage</th>
+                      <th className="px-4 py-3 text-left font-semibold text-slate-600">Status</th>
+                      <th className="px-4 py-3 text-left font-semibold text-slate-600">Time</th>
+                      <th className="px-4 py-3 text-left font-semibold text-slate-600">Submitted</th>
+                      <th className="px-4 py-3 text-left font-semibold text-slate-600">Action</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-zinc-100">
+                  <tbody className="divide-y divide-slate-100">
                     {teacherResults.map((result) => (
-                      <tr key={result._id} className="hover:bg-zinc-50/80">
+                      <tr key={result._id} className="hover:bg-slate-50/80">
                         <td className="px-4 py-4 align-top">
-                          <div className="font-semibold text-zinc-950">{result.studentId?.fullName}</div>
-                          <div className="mt-1 text-xs text-zinc-500">{result.studentId?.email}</div>
+                          <div className="font-semibold text-slate-950">{result.studentId?.fullName}</div>
+                          <div className="mt-1 text-xs text-slate-500">{result.studentId?.email}</div>
                         </td>
                         <td className="px-4 py-4 align-top">
-                          <div className="font-semibold text-zinc-950">{result.testId?.title}</div>
-                          <div className="mt-1 text-xs text-zinc-500">{result.testId?.subject}</div>
+                          <div className="font-semibold text-slate-950">{result.testId?.title}</div>
+                          <div className="mt-1 text-xs text-slate-500">{result.testId?.subject}</div>
                         </td>
-                        <td className="px-4 py-4 align-top text-zinc-700">
+                        <td className="px-4 py-4 align-top">
                           <span className="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1 font-semibold text-emerald-700">
                             <BadgeCheck size={14} />
                             {result.score}/{result.totalMarks}
                           </span>
                         </td>
-                        <td className="px-4 py-4 align-top text-zinc-700">{result.percentage}%</td>
+                        <td className="px-4 py-4 align-top text-slate-700">{result.percentage}%</td>
                         <td className="px-4 py-4 align-top">
-                          <span className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                            result.status === "submitted"
-                              ? "bg-amber-100 text-amber-700"
-                              : "bg-emerald-100 text-emerald-700"
-                          }`}>
+                          <span className={`rounded-full px-3 py-1 text-xs font-semibold ${result.status === "submitted" ? "bg-amber-100 text-amber-700" : "bg-emerald-100 text-emerald-700"}`}>
                             {result.status === "submitted" ? "Pending" : "Evaluated"}
                           </span>
                         </td>
-                        <td className="px-4 py-4 align-top text-zinc-700">{Math.round((Number(result.timeTaken) || 0) / 60)} mins</td>
-                        <td className="px-4 py-4 align-top text-zinc-700">{new Date(result.createdAt).toLocaleString()}</td>
-                        <td className="px-4 py-4 align-top text-zinc-700">
-                          <Link
-                            to={`/teacher/submissions/${result._id}`}
-                            className="inline-flex items-center rounded-full bg-slate-900 px-3 py-2 text-xs font-semibold text-white transition hover:bg-slate-800"
-                          >
+                        <td className="px-4 py-4 align-top text-slate-700">{Math.round((Number(result.timeTaken) || 0) / 60)} mins</td>
+                        <td className="px-4 py-4 align-top text-slate-700">{new Date(result.createdAt).toLocaleString()}</td>
+                        <td className="px-4 py-4 align-top">
+                          <Link to={`/teacher/submissions/${result._id}`} className={secondaryButtonClass}>
                             Review
                           </Link>
                         </td>
@@ -192,7 +152,7 @@ export default function AllStudentResult() {
             </div>
           </>
         )}
-      </section>
+      </SectionCard>
     </div>
   );
 }

@@ -58,7 +58,7 @@ const getSubmissionDetailsForTeacher = asyncHandler(async (req, res) => {
   const submission = await Submission.findById(submissionId).populate(
     "testId",
     "title subject duration startTime endTime createdBy"
-  );
+  ).populate("studentId", "fullName email");
 
   if (!submission) {
     throw new ApiError(404, "Submission not found");

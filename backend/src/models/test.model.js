@@ -33,6 +33,19 @@ const testSchema = new mongoose.Schema(
       type: Date,
       required: [true, "End time is required"],
     },
+    negativeMarkingEnabled: {
+      type: Boolean,
+      default: false,
+    },
+    negativeMarkingValue: {
+      type: Number,
+      default: 0,
+      min: [0, "Negative marking cannot be negative"],
+    },
+    randomizeQuestions: {
+      type: Boolean,
+      default: false,
+    },
   },
   {
     timestamps: true,
@@ -42,6 +55,10 @@ const testSchema = new mongoose.Schema(
 testSchema.pre("validate", function () {
   if (this.startTime && this.endTime && this.endTime <= this.startTime) {
     this.invalidate("endTime", "End time must be after start time");
+  }
+
+  if (!this.negativeMarkingEnabled) {
+    this.negativeMarkingValue = 0;
   }
 });
 

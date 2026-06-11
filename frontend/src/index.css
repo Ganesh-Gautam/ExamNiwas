@@ -4,18 +4,138 @@
 
 :root {
   color-scheme: light;
-  font-family: "Segoe UI", system-ui, sans-serif;
+  font-family: "Nunito Sans", sans-serif;
+  background:
+    radial-gradient(circle at top left, rgba(125, 211, 252, 0.18), transparent 32%),
+    radial-gradient(circle at right 20%, rgba(167, 139, 250, 0.12), transparent 28%),
+    linear-gradient(180deg, #f8fbff 0%, #b1edff 38%, #f8fafc 100%);
+  --app-bg: linear-gradient(180deg, #f8fbff 0%, #b1edff 38%, #f8fafc 100%);
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
 }
 
 html.dark {
   color-scheme: dark;
+  --app-bg:
+    radial-gradient(circle at top left, rgba(56, 139, 252, 0.16), transparent 32%),
+    radial-gradient(circle at right 18%, rgba(96, 123, 237, 0.10), transparent 28%),
+    linear-gradient(180deg, #111827 0%, #0f172a 42%, #111827 100%);
+  --text-primary: #e2e8f0;
+  --text-secondary: #94a3b8;
+}
+
+html {
+  scroll-behavior: smooth;
 }
 
 body {
   margin: 0;
   min-width: 320px;
+  background: var(--app-bg);
+  color: var(--text-primary);
+  text-rendering: optimizeLegibility;
 }
 
 #root {
   min-height: 100vh;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+::selection {
+  background: rgba(56, 189, 248, 0.2);
+}
+
+.dark :where([class*="bg-[radial-gradient"], [class*="bg-[linear-gradient"]) {
+  background-image:
+    radial-gradient(circle at top left, rgba(56, 139, 252, 0.14), transparent 32%),
+    radial-gradient(circle at right 18%, rgba(94, 97, 183, 0.12), transparent 28%),
+    linear-gradient(180deg, rgba(15, 23, 42, 0.76), rgba(30, 41, 59, 0.86), rgba(15, 23, 42, 0.94)) !important;
+}
+
+.dark :where(
+  [class*="bg-white"],
+  [class*="bg-slate-50"],
+  [class*="bg-zinc-50"],
+  [class*="bg-slate-100"],
+  [class*="bg-zinc-100"],
+  [class*="bg-slate-200"]
+) {
+  background-color: rgba(15, 23, 42, 0.84) !important;
+}
+
+.dark :where(
+  [class*="bg-slate-950"],
+  [class*="bg-slate-900"],
+  [class*="bg-slate-800"],
+  [class*="bg-slate-700"]
+) {
+  background-color: rgba(15, 23, 42, 0.86) !important;
+}
+
+.dark :where(
+  [class*="border-white"],
+  [class*="border-slate-100"],
+  [class*="border-slate-200"],
+  [class*="border-zinc-200"]
+) {
+  border-color: rgba(148, 163, 184, 0.18) !important;
+}
+
+.dark :where(
+  [class*="text-slate-950"],
+  [class*="text-slate-900"],
+  [class*="text-zinc-950"],
+  [class*="text-zinc-900"]
+) {
+  color: #f8fafc !important;
+}
+
+.dark :where(
+  [class*="text-slate-800"],
+  [class*="text-slate-700"],
+  [class*="text-zinc-800"],
+  [class*="text-zinc-700"]
+) {
+  color: #cbd5e1 !important;
+}
+
+.dark :where(
+  [class*="text-slate-600"],
+  [class*="text-slate-500"],
+  [class*="text-slate-400"],
+  [class*="text-zinc-600"],
+  [class*="text-zinc-500"]
+) {
+  color: #94a3b8 !important;
+}
+
+.dark :where(input, textarea, select) {
+  background-color: rgba(15, 23, 42, 0.78);
+  border-color: rgba(148, 163, 184, 0.22);
+  color: #e2e8f0;
+}
+
+.dark :where(input::placeholder, textarea::placeholder) {
+  color: #94a3b8;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .page-enter {
+    animation: page-enter 0.45s ease-out both;
+  }
+}
+
+@keyframes page-enter {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }

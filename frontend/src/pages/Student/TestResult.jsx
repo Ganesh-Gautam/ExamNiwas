@@ -1,20 +1,16 @@
-import { AlertCircle, BadgeCheck, BookOpen, Clock3, ClipboardList } from "../../lib/lucide-react.jsx";
+import { AlertCircle, BookOpen, ClipboardList } from "../../lib/lucide-react.jsx";
 import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Link, useParams } from "react-router-dom";
 import toast from "react-hot-toast";
 import { clearCurrentResult, fetchStudentTestResult } from "../../features/submissions/submissionSlice.js";
+import { cn, EmptyState, PageHero, SectionCard, StatCard, primaryButtonClass, secondaryButtonClass, pageWrapClass, surfaceClass, noticeClass } from "../../components/common/ui.jsx";
 
 const formatDuration = (seconds) => {
   const totalSeconds = Number(seconds) || 0;
   const minutes = Math.floor(totalSeconds / 60);
   const remainingSeconds = totalSeconds % 60;
-
-  if (remainingSeconds === 0) {
-    return `${minutes} min`;
-  }
-
-  return `${minutes} min ${remainingSeconds} sec`;
+  return remainingSeconds === 0 ? `${minutes} min` : `${minutes} min ${remainingSeconds} sec`;
 };
 
 export default function TestResult() {
@@ -38,7 +34,7 @@ export default function TestResult() {
 
   if (isLoading) {
     return (
-      <div className="rounded-4xl border border-white/80 bg-white/80 px-6 py-12 text-sm text-zinc-500 shadow-[0_24px_80px_rgba(15,23,42,0.08)]">
+      <div className={noticeClass}>
         Loading result...
       </div>
     );
@@ -47,132 +43,115 @@ export default function TestResult() {
   const submission = currentResult?.submission;
   const answers = currentResult?.answers ?? [];
   const isPending = submission?.status === "submitted";
+  const correctCount = answers.filter((answer) => answer.isCorrect).length;
+  const incorrectCount = answers.filter((answer) => answer.type === "mcq" && answer.selectedAnswer && !answer.isCorrect).length;
+  const skippedCount = answers.filter((answer) => (answer.type === "mcq" ? !answer.selectedAnswer : !answer.answerText?.trim())).length;
 
   if (!submission) {
     return (
-      <div className="rounded-4xl border border-dashed border-zinc-200 bg-white/80 px-6 py-12 text-center shadow-[0_24px_80px_rgba(15,23,42,0.08)]">
-        <AlertCircle size={32} className="mx-auto mb-3 text-zinc-400" />
-        <h1 className="text-2xl font-black text-zinc-950">Result not available</h1>
-        <p className="mt-2 text-sm text-zinc-500">We could not find a submitted result for this test.</p>
-        <Link
-          to="/student"
-          className="mt-6 inline-flex items-center justify-center rounded-full bg-zinc-950 px-4 py-2 text-sm font-semibold text-white transition hover:bg-zinc-800"
-        >
-          Back to dashboard
-        </Link>
-      </div>
+      <EmptyState
+        icon={<AlertCircle size={24} />}
+        title="Result not available"
+        description="We could not find a submitted result for this test."
+        action={
+          <Link to="/student" className={primaryButtonClass}>
+            Back to dashboard
+          </Link>
+        }
+      />
     );
   }
 
   return (
-    <div className="space-y-6">
-      <section
-          className={`rounded-4xl border border-emerald-200/80 p-8 shadow-[0_24px_70px_rgba(15,118,110,0.1)]
-          ${
-            isPending
-              ? "bg-[linear-gradient(135deg,rgba(254,242,242,0.96),rgba(255,255,255,0.96)),radial-gradient(circle_at_top_left,rgba(239,68,68,0.16),transparent_30%)]"
-              : "bg-[linear-gradient(135deg,rgba(240,253,250,0.96),rgba(255,255,255,0.96)),radial-gradient(circle_at_top_left,rgba(16,185,129,0.16),transparent_30%)]"
-          }`}
-        >
-        <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-          <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.3em] text-emerald-700">Test Result</p>
-            <h1 className="mt-3 font-['Georgia'] text-4xl font-bold text-zinc-950">{submission.testId?.title}</h1>
-            <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-600">
-              {isPending
-                ? "Your written answers are pending teacher evaluation. Review what you've submitted and check back when grading is complete."
-                : "Your evaluation is complete. Review the score summary and each answer below."}
-            </p>
-          </div>
-
-          <div className="rounded-4xl border border-emerald-200 bg-white/90 px-6 py-5 text-center">
-            <p className="text-xs uppercase tracking-[0.25em] text-emerald-700">Score</p>
-            <div className="mt-2 flex items-end justify-center gap-2">
-              <span className="text-4xl font-black text-emerald-700">{submission.score}</span>
-              <span className="pb-1 text-sm text-zinc-500">/ {submission.totalMarks}</span>
-            </div>
-            <p className="mt-2 text-sm font-semibold text-zinc-700">{submission.percentage}%</p>
-          </div>
-        </div>
-
-        <div className="mt-6 grid gap-4 md:grid-cols-4">
-          <div className="rounded-3xl border border-white/80 bg-white/80 p-4">
-            <p className="text-xs uppercase tracking-[0.25em] text-zinc-500">Subject</p>
-            <p className="mt-2 text-lg font-black text-zinc-950">{submission.testId?.subject}</p>
-          </div>
-          <div className="rounded-3xl border border-white/80 bg-white/80 p-4">
-            <p className="text-xs uppercase tracking-[0.25em] text-zinc-500">Questions</p>
-            <p className="mt-2 text-lg font-black text-zinc-950">{answers.length}</p>
-          </div>
-          <div className="rounded-3xl border border-white/80 bg-white/80 p-4">
-            <p className="text-xs uppercase tracking-[0.25em] text-zinc-500">Correct</p>
-            <p className="mt-2 text-lg font-black text-zinc-950">{answers.filter((answer) => answer.isCorrect).length}</p>
-          </div>
-          <div className="rounded-3xl border border-white/80 bg-white/80 p-4">
-            <p className="text-xs uppercase tracking-[0.25em] text-zinc-500">Time Taken</p>
-            <p className="mt-2 text-lg font-black text-zinc-950">{formatDuration(submission.timeTaken)}</p>
-          </div>
-        </div>
-      </section>
-
-      <section className="rounded-4xl border border-white/80 bg-white/90 p-6 shadow-[0_20px_70px_rgba(15,23,42,0.08)]">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h2 className="text-2xl font-black text-zinc-950">Answer Review</h2>
-            <p className="text-sm text-zinc-500">Green highlights correct responses. Incorrect and skipped responses are marked clearly.</p>
-          </div>
-          <div className="flex gap-3">
-            <Link
-              to="/student/tests/result"
-              className="inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-50"
-            >
+    <div className={`${pageWrapClass} page-enter`}>
+      <PageHero
+        eyebrow="Result Overview"
+        title={submission.testId?.title}
+        description={
+          isPending
+            ? "Your written responses are waiting for teacher evaluation. You can still review your submission and status here."
+            : "Your evaluation is complete. Review the overall score, answer quality, and detailed breakdown below."
+        }
+        accent={isPending ? "amber" : "emerald"}
+        actions={
+          <>
+            <Link to="/student/tests/result" className={secondaryButtonClass}>
               <ClipboardList size={16} />
               All results
             </Link>
-            <Link
-              to="/student"
-              className="inline-flex items-center gap-2 rounded-full bg-zinc-950 px-4 py-2 text-sm font-semibold text-white transition hover:bg-zinc-800"
-            >
+            <Link to="/student" className={primaryButtonClass}>
               <BookOpen size={16} />
               Dashboard
             </Link>
+          </>
+        }
+        stats={[
+          <StatCard key="score" label="Score" value={`${submission.score}/${submission.totalMarks}`} hint={`${submission.percentage}% overall`} tone="success" />,
+          <StatCard key="correct" label="Correct" value={correctCount} hint="Auto-checked correct answers." />,
+          <StatCard key="incorrect" label="Incorrect" value={incorrectCount} hint="Wrong MCQ responses." />,
+          <StatCard key="time" label="Time Taken" value={formatDuration(submission.timeTaken)} hint={isPending ? "Waiting on final grading." : "Submission complete."} />,
+        ]}
+      />
+
+      <SectionCard
+        title="Performance Summary"
+        description="A cleaner snapshot of what went right, what was skipped, and how the attempt was scored."
+      >
+        <div className="grid gap-4 lg:grid-cols-4">
+          <div className={cn(surfaceClass, "p-5")}>
+            <p className="text-xs uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">Subject</p>
+            <p className="mt-3 text-xl font-semibold text-slate-950 dark:text-slate-100">{submission.testId?.subject}</p>
+          </div>
+          <div className={cn(surfaceClass, "p-5")}>
+            <p className="text-xs uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">Questions</p>
+            <p className="mt-3 text-xl font-semibold text-slate-950 dark:text-slate-100">{answers.length}</p>
+          </div>
+          <div className={cn(surfaceClass, "p-5")}>
+            <p className="text-xs uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">Skipped</p>
+            <p className="mt-3 text-xl font-semibold text-slate-950 dark:text-slate-100">{skippedCount}</p>
+          </div>
+          <div className={cn(surfaceClass, "p-5")}>
+            <p className="text-xs uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">Negative Marking</p>
+            <p className="mt-3 text-sm font-semibold text-slate-950 dark:text-slate-100">
+              {submission.testId?.negativeMarkingEnabled ? `-${submission.testId?.negativeMarkingValue} per wrong MCQ` : "Not enabled"}
+            </p>
           </div>
         </div>
+      </SectionCard>
 
-        <div className="mt-6 space-y-4">
+      <SectionCard
+        title="Answer Review"
+        description="Correct answers, skipped responses, and written submissions are grouped more clearly for quick review."
+      >
+        <div className="space-y-4">
           {answers.map((answer, index) => {
             const wasSkipped = answer.type === "mcq" ? !answer.selectedAnswer : !answer.answerText?.trim();
             const statusLabel = answer.type === "written"
-              ? "Evaluating..."
+              ? isPending
+                ? "Awaiting evaluation"
+                : "Evaluated"
               : answer.isCorrect
                 ? "Correct"
                 : wasSkipped
                   ? "Skipped"
                   : "Incorrect";
 
+            const statusClass = answer.type === "written"
+              ? isPending
+                ? "bg-amber-100 text-amber-700"
+                : "bg-emerald-100 text-emerald-700"
+              : answer.isCorrect
+                ? "bg-emerald-100 text-emerald-700"
+                : "bg-rose-100 text-rose-700";
+
             return (
-              <article
-                key={answer.questionId}
-                className="rounded-3xl border border-zinc-200 bg-zinc-50/70 p-5"
-              >
+              <article key={answer.questionId} className={cn(surfaceClass, "p-5") }>
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                   <div>
-                    <h3 className="text-lg font-black text-zinc-950">Question {index + 1}</h3>
-                    <p className="mt-2 text-sm leading-6 text-zinc-700">{answer.question}</p>
+                    <h3 className="text-lg font-semibold text-slate-950">Question {index + 1}</h3>
+                    <p className="mt-2 text-sm leading-6 text-slate-700">{answer.question}</p>
                   </div>
-                  <div
-                    className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                      answer.type === "written"
-                        ? isPending
-                          ? "bg-amber-100 text-amber-700"
-                          : "bg-emerald-100 text-emerald-700"
-                        : answer.isCorrect
-                          ? "bg-emerald-100 text-emerald-700"
-                          : "bg-rose-100 text-rose-700"
-                    }`}
-                  >
-                    {statusLabel}
-                  </div>
+                  <span className={`rounded-full px-3 py-1 text-xs font-semibold ${statusClass}`}>{statusLabel}</span>
                 </div>
 
                 {answer.type === "mcq" ? (
@@ -184,12 +163,12 @@ export default function TestResult() {
                       return (
                         <div
                           key={`${answer.questionId}-${optionIndex}`}
-                          className={`rounded-2xl border px-4 py-3 text-sm ${
+                          className={`rounded-[1.25rem] border px-4 py-3 text-sm ${
                             isCorrectOption
                               ? "border-emerald-200 bg-emerald-50 text-emerald-900"
                               : isChosenOption
                                 ? "border-rose-200 bg-rose-50 text-rose-800"
-                                : "border-zinc-200 bg-white text-zinc-700"
+                                : "border-slate-200 bg-white text-slate-700"
                           }`}
                         >
                           <span className="font-semibold">{String.fromCharCode(65 + optionIndex)}.</span> {option}
@@ -198,8 +177,8 @@ export default function TestResult() {
                     })}
                   </div>
                 ) : (
-                  <div className="mt-5 rounded-2xl border border-zinc-200 bg-white px-4 py-4 text-sm text-zinc-700">
-                    <p className="font-semibold text-zinc-900">Answer text</p>
+                  <div className="mt-5 rounded-3xl border border-slate-200 bg-white px-4 py-4 text-sm text-slate-700">
+                    <p className="font-semibold text-slate-900">Answer text</p>
                     <p className="mt-2 whitespace-pre-line">{answer.answerText || "No answer provided."}</p>
                   </div>
                 )}
@@ -207,15 +186,15 @@ export default function TestResult() {
                 <div className="mt-4 flex flex-wrap gap-3 text-sm">
                   {answer.type === "mcq" ? (
                     <>
-                      <div className="rounded-full bg-white px-4 py-2 text-zinc-700">
+                      <div className="rounded-full bg-white px-4 py-2 text-slate-700">
                         Your answer: <span className="font-semibold">{answer.selectedAnswer || "Not answered"}</span>
                       </div>
-                      <div className="rounded-full bg-white px-4 py-2 text-zinc-700">
+                      <div className="rounded-full bg-white px-4 py-2 text-slate-700">
                         Correct answer: <span className="font-semibold">{answer.correctAnswer}</span>
                       </div>
                     </>
                   ) : null}
-                  <div className="rounded-full bg-white px-4 py-2 text-zinc-700">
+                  <div className="rounded-full bg-white px-4 py-2 text-slate-700">
                     Marks: <span className="font-semibold">{answer.marksObtained} / {answer.marks}</span>
                   </div>
                 </div>
@@ -223,7 +202,7 @@ export default function TestResult() {
             );
           })}
         </div>
-      </section>
+      </SectionCard>
     </div>
   );
 }

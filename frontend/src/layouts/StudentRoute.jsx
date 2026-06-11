@@ -6,7 +6,7 @@ export default function StudentRoute({ children }) {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-[40vh] items-center justify-center rounded-3xl border border-white/60 bg-white/70 p-10 text-sm font-semibold text-zinc-500 shadow-[0_30px_90px_rgba(15,23,42,0.08)]">
+      <div className="flex min-h-[40vh] items-center justify-center rounded-3xl border border-white/60 bg-white/70 p-10 text-sm font-semibold text-zinc-500 shadow-[0_30px_90px_rgba(15,23,42,0.08)] dark:border-slate-700/70 dark:bg-slate-950/80 dark:text-slate-100">
         Checking your student access...
       </div>
     );

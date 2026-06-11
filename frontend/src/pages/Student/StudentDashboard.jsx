@@ -1,9 +1,10 @@
-import { CalendarDays, Clock3, ClipboardList, PlusCircle, TimerReset, BookOpen, AlertCircle } from "../../lib/lucide-react.jsx";
-import { useEffect } from "react";
+import { AlertCircle, BookOpen, CalendarDays, ClipboardList, Clock3, PlusCircle, TimerReset } from "../../lib/lucide-react.jsx";
+import { useEffect, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Link } from "react-router-dom";
 import toast from "react-hot-toast";
-import { fetchAvailableTests, fetchStudentResults } from "../../features/submissions/submissionSlice.js"; 
+import { fetchAvailableTests, fetchStudentResults } from "../../features/submissions/submissionSlice.js";
+import { EmptyState, PageHero, SectionCard, StatCard, cn, noticeClass, primaryButtonClass, secondaryButtonClass, pageWrapClass, surfaceClass } from "../../components/common/ui.jsx";
 
 export default function StudentDashboard() {
   const dispatch = useDispatch();
@@ -21,61 +22,70 @@ export default function StudentDashboard() {
     }
   }, [error]);
 
-  const attemptedTestIds = new Set(studentResults.map((r) => r.testId._id || r.testId));
+  const resolveTestId = (result) => result.testId?._id || result.testId || "";
 
-  const getResultForTest = (testId) => {
-    return studentResults.find((r) => (r.testId._id || r.testId) === testId);
-  };
+  const attemptedTestIds = useMemo(
+    () => new Set(studentResults.map((result) => resolveTestId(result)).filter(Boolean)),
+    [studentResults]
+  );
+
+  const averagePercentage = studentResults.length
+    ? (
+        studentResults.reduce((sum, result) => sum + (Number(result.percentage) || 0), 0) /
+        studentResults.length
+      ).toFixed(1)
+    : "0.0";
+
+  const completedCount = studentResults.length;
+  const upcomingCount = availableTests.filter((test) => new Date(test.startTime) > new Date()).length;
+
+  const getResultForTest = (testId) => studentResults.find((result) => resolveTestId(result) === testId);
 
   return (
-    <div className="space-y-8">
-      <section className="relative overflow-hidden rounded-4xl border border-emerald-200/80 bg-[linear-gradient(135deg,rgba(240,253,250,0.95),rgba(236,253,245,0.95)),radial-gradient(circle_at_top_right,rgba(16,185,129,0.25),transparent_32%)] p-8 shadow-[0_30px_90px_rgba(5,150,105,0.12)]">
-        <div className="absolute -right-12 top-8 h-40 w-40 rounded-full bg-emerald-300/30 blur-3xl" />
-        <div className="relative">
-          <p className="text-sm font-semibold uppercase tracking-[0.3em] text-emerald-700">Student Portal</p>
-          <h1 className="mt-4 max-w-xl font-['Georgia'] text-4xl font-bold leading-tight text-zinc-950 sm:text-5xl">
-            Take tests and track your progress.
-          </h1>
-          <p className="mt-4 max-w-2xl text-base leading-7 text-zinc-700">
-            Welcome, {user?.fullName || "Student"}. Choose a test, answer questions, and see your results instantly.
-          </p>
-
-          <div className="mt-8 grid gap-4 sm:grid-cols-2">
-            <div className="rounded-3xl border border-white/80 bg-white/70 p-4">
-              <p className="text-sm text-zinc-500">Available tests</p>
-              <p className="mt-2 text-3xl font-black text-zinc-950">{availableTests.length}</p>
-            </div>
-            <Link
-              to="/student/tests/result"
-              className="rounded-3xl border border-white/80 bg-white/70 p-4 transition hover:bg-white"
-            >
-              <p className="text-sm text-zinc-500">Tests attempted</p>
-              <p className="mt-2 text-3xl font-black text-zinc-950">{studentResults.length}</p>
-              <p className="text-xs text-zinc-500">Click to see all your results</p>
+    <div className={`${pageWrapClass} page-enter`}> 
+      <PageHero
+        eyebrow="Student Portal"
+        title={`Welcome back, ${user?.fullName?.split(" ")[0] || "Student"}.`}
+        description="Start live exams, revisit completed attempts, and track your performance."
+        accent="emerald"
+        actions={
+          <>
+            <Link to="/student/tests/result" className={secondaryButtonClass}>
+              <ClipboardList size={16} />
+              View result history
             </Link>
-          </div>
-        </div>
-      </section>
+            {availableTests[0] ? (
+              <Link to={`/student/tests/${availableTests[0]._id}/attempt`} className={primaryButtonClass}>
+                <PlusCircle size={16} />
+                Start latest test
+              </Link>
+            ) : null}
+          </>
+        }
+        stats={[
+          <StatCard key="available" label="Available Tests" value={availableTests.length} hint="Tests currently visible for you." />,
+          <StatCard key="upcoming" label="Upcoming Exams" value={upcomingCount} hint="Scheduled to open soon." />,
+          <StatCard key="completed" label="Completed Exams" value={completedCount} hint="Your submitted attempts." />,
+          <StatCard key="average" label="Average Score" value={`${averagePercentage}%`} hint="Across evaluated submissions." tone="success" />,
+        ]}
+      />
 
-      <section className="rounded-4xl border border-white/80 bg-white/80 p-6 shadow-[0_24px_80px_rgba(15,23,42,0.08)]">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h2 className="text-2xl font-black text-zinc-950">Available Tests</h2>
-            <p className="text-sm text-zinc-500">Tests currently open for attempt.</p>
-          </div>
-        </div>
-
+      <SectionCard
+        title="Available Tests"
+        description="Open tests are listed here with timing, question count, and direct actions."
+      >
         {isLoading ? (
-          <div className="mt-6 rounded-3xl border border-dashed border-zinc-200 bg-zinc-50 px-6 py-10 text-sm text-zinc-500">
+          <div className={noticeClass}>
             Loading tests...
           </div>
         ) : availableTests.length === 0 ? (
-          <div className="mt-6 rounded-3xl border border-dashed border-zinc-200 bg-zinc-50 px-6 py-10 text-center">
-            <AlertCircle size={32} className="mx-auto text-zinc-400 mb-2" />
-            <p className="text-sm text-zinc-500">No tests available at the moment. Check back later!</p>
-          </div>
+          <EmptyState
+            icon={<AlertCircle size={24} />}
+            title="No tests available yet"
+            description="Nothing is open for attempt right now. Check back later for newly scheduled exams."
+          />
         ) : (
-          <div className="mt-6 grid gap-4 lg:grid-cols-2">
+          <div className="grid gap-4 xl:grid-cols-2">
             {availableTests.map((test) => {
               const isAttempted = attemptedTestIds.has(test._id);
               const result = getResultForTest(test._id);
@@ -83,68 +93,50 @@ export default function StudentDashboard() {
               return (
                 <article
                   key={test._id}
-                  className="rounded-[1.75rem] border border-emerald-200/60 bg-[linear-gradient(180deg,#f0fdfa_0%,#ffffff_100%)] p-5 shadow-[0_18px_45px_rgba(16,185,129,0.08)]"
+                  className={cn(surfaceClass, "group p-5 transition duration-200 hover:-translate-y-1 hover:shadow-[0_24px_60px_rgba(15,23,42,0.08)]")}
                 >
                   <div className="flex items-start justify-between gap-4">
                     <div>
-                      <p className="text-xs font-semibold uppercase tracking-[0.25em] text-emerald-700">{test.subject}</p>
-                      <h3 className="mt-2 text-2xl font-black text-zinc-950">{test.title}</h3>
+                      <p className="text-xs font-semibold uppercase tracking-[0.28em] text-emerald-700">{test.subject}</p>
+                      <h3 className="mt-2 text-2xl font-semibold tracking-[-0.03em] text-slate-950">{test.title}</h3>
                     </div>
-                    {isAttempted && (
-                      <div className="rounded-full bg-emerald-600 px-3 py-1 text-xs font-semibold text-white">
-                        Attempted
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="mt-5 grid gap-3 text-sm text-zinc-600 sm:grid-cols-2">
-                    <div className="flex items-center gap-2">
-                      <TimerReset size={16} className="text-emerald-600" />
-                      {test.duration} minutes
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <ClipboardList size={16} className="text-emerald-600" />
-                      {test.totalQuestions || 0} questions
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Clock3 size={16} className="text-emerald-600" />
-                      {new Date(test.startTime).toLocaleString()}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <CalendarDays size={16} className="text-emerald-600" />
-                      Ends {new Date(test.endTime).toLocaleTimeString()}
+                    <div className={`rounded-full px-3 py-1 text-xs font-semibold ${isAttempted ? "bg-emerald-100 text-emerald-700" : "bg-slate-950/10 text-slate-600 dark:bg-slate-800/70 dark:text-slate-200"}`}>
+                      {isAttempted ? "Completed" : "Open"}
                     </div>
                   </div>
 
-                  {result && (
-                    <div className="mt-4 rounded-lg border border-emerald-100 bg-emerald-50 p-3">
-                      <p className="text-xs font-semibold text-emerald-900">Your Score</p>
-                      <div className="mt-2 flex items-baseline gap-2">
-                        <span className="text-2xl font-black text-emerald-600">{result.score}</span>
-                        <span className="text-sm text-emerald-700">/ {result.totalMarks}</span>
+                  <div className="mt-5 grid gap-3 text-sm text-slate-600 sm:grid-cols-2">
+                    <div className="flex items-center gap-2"><TimerReset size={16} className="text-emerald-600" />{test.duration} minutes</div>
+                    <div className="flex items-center gap-2"><ClipboardList size={16} className="text-emerald-600" />{test.totalQuestions || 0} questions</div>
+                    <div className="flex items-center gap-2"><Clock3 size={16} className="text-emerald-600" />{new Date(test.startTime).toLocaleString()}</div>
+                    <div className="flex items-center gap-2"><CalendarDays size={16} className="text-emerald-600" />Ends {new Date(test.endTime).toLocaleString()}</div>
+                  </div>
+
+                  {result ? (
+                    <div className="mt-5 rounded-3xl border border-emerald-100 bg-emerald-50/80 p-4">
+                      <p className="text-xs font-semibold uppercase tracking-[0.24em] text-emerald-700">Latest Score</p>
+                      <div className="mt-3 flex items-end gap-2">
+                        <span className="text-3xl font-semibold tracking-[-0.04em] text-emerald-700">{result.score}</span>
+                        <span className="pb-1 text-sm text-emerald-700">/ {result.totalMarks}</span>
                       </div>
-                      <p className="mt-1 text-xs text-emerald-700">
-                        {result.percentage.toFixed(1)}% • {Math.round(result.timeTaken / 60)} mins
-                      </p>
+                      <p className="mt-2 text-sm text-emerald-800">{result.percentage.toFixed(1)}% scored</p>
+                    </div>
+                  ) : (
+                    <div className={cn(surfaceClass, "mt-5 p-4 text-sm text-slate-500") }>
+                      This exam has not been attempted yet.
                     </div>
                   )}
 
-                  <div className="mt-5 border-t border-emerald-100 pt-4">
+                  <div className="mt-5 flex gap-3 border-t border-slate-100 pt-4">
                     {isAttempted ? (
-                      <Link
-                        to={`/student/tests/${test._id}/result`}
-                        className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-emerald-100 px-4 py-2 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-200"
-                      >
+                      <Link to={`/student/tests/${test._id}/result`} className={`${secondaryButtonClass} flex-1`}>
                         <BookOpen size={16} />
-                        View Result
+                        View result
                       </Link>
                     ) : (
-                      <Link
-                        to={`/student/tests/${test._id}/attempt`}
-                        className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700"
-                      >
+                      <Link to={`/student/tests/${test._id}/attempt`} className={`${primaryButtonClass} flex-1 bg-emerald-600 hover:bg-emerald-700`}>
                         <PlusCircle size={16} />
-                        Attempt Now
+                        Attempt now
                       </Link>
                     )}
                   </div>
@@ -153,7 +145,7 @@ export default function StudentDashboard() {
             })}
           </div>
         )}
-      </section>
+      </SectionCard>
     </div>
   );
 }

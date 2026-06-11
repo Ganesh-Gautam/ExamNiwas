@@ -6,7 +6,16 @@ import ApiError from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 
 const createTest = asyncHandler(async (req, res) => {
-  const { title, subject, duration, startTime, endTime } = req.body; 
+  const {
+    title,
+    subject,
+    duration,
+    startTime,
+    endTime,
+    negativeMarkingEnabled,
+    negativeMarkingValue,
+    randomizeQuestions,
+  } = req.body;
 
   if (!title || !subject || !duration || !startTime || !endTime) {
     throw new ApiError(400, "All test fields are required");
@@ -19,6 +28,9 @@ const createTest = asyncHandler(async (req, res) => {
     createdBy: req.user._id,
     startTime,
     endTime,
+    negativeMarkingEnabled: Boolean(negativeMarkingEnabled),
+    negativeMarkingValue: Boolean(negativeMarkingEnabled) ? Number(negativeMarkingValue) || 0 : 0,
+    randomizeQuestions: Boolean(randomizeQuestions),
   });
 
   return res
@@ -62,8 +74,7 @@ const addQuestions = asyncHandler(async (req, res) => {
     return res
       .status(201)
       .json(new ApiResponse(201, createdQuestions, "Questions added successfully"));
-  } catch (error) {
-    // Handle validation errors from MongoDB
+  } catch (error) { 
     if (error.name === "ValidationError") {
       const errorMessages = Object.values(error.errors)
         .map((err) => err.message)
@@ -195,13 +206,31 @@ const updateQuestion = asyncHandler(async (req, res) => {
 
 const updateTest = asyncHandler(async (req, res) => {
   const { testId } = req.params;
-  const { title, subject, duration, startTime, endTime } = req.body;
+  const {
+    title,
+    subject,
+    duration,
+    startTime,
+    endTime,
+    negativeMarkingEnabled,
+    negativeMarkingValue,
+    randomizeQuestions,
+  } = req.body;
 
   if (!mongoose.Types.ObjectId.isValid(testId)) {
     throw new ApiError(400, "Invalid test id");
   }
 
-  if (!title && !subject && !duration && !startTime && !endTime) {
+  if (
+    title === undefined &&
+    subject === undefined &&
+    duration === undefined &&
+    startTime === undefined &&
+    endTime === undefined &&
+    negativeMarkingEnabled === undefined &&
+    negativeMarkingValue === undefined &&
+    randomizeQuestions === undefined
+  ) {
     throw new ApiError(400, "At least one field is required to update");
   }
 
@@ -213,9 +242,18 @@ const updateTest = asyncHandler(async (req, res) => {
   const updateData = {};
   if (title) updateData.title = title.trim();
   if (subject) updateData.subject = subject.trim();
-  if (duration) updateData.duration = Number(duration);
-  if (startTime) updateData.startTime = startTime;
-  if (endTime) updateData.endTime = endTime;
+  if (duration !== undefined) updateData.duration = Number(duration);
+  if (startTime !== undefined) updateData.startTime = startTime;
+  if (endTime !== undefined) updateData.endTime = endTime;
+  if (negativeMarkingEnabled !== undefined) {
+    updateData.negativeMarkingEnabled = Boolean(negativeMarkingEnabled);
+    updateData.negativeMarkingValue = Boolean(negativeMarkingEnabled) ? Number(negativeMarkingValue) || 0 : 0;
+  } else if (negativeMarkingValue !== undefined) {
+    updateData.negativeMarkingValue = Number(negativeMarkingValue) || 0;
+  }
+  if (randomizeQuestions !== undefined) {
+    updateData.randomizeQuestions = Boolean(randomizeQuestions);
+  }
 
   const updatedTest = await Test.findByIdAndUpdate(
     testId,
@@ -239,11 +277,9 @@ const deleteTest = asyncHandler(async (req, res) => {
   if (!test) {
     throw new ApiError(404, "Test not found for this teacher");
   }
-
-  // Delete all questions associated with this test
+ 
   await Question.deleteMany({ testId });
-
-  // Delete the test
+ 
   const deletedTest = await Test.findByIdAndDelete(testId);
 
   return res

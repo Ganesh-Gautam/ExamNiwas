@@ -20,4 +20,34 @@ const getCurrentUser = async()=>{
      return res.data;
 }
 
-export {loginUser , registerUser ,logoutUser , getCurrentUser}
+const updateAccountDetails = async(data)=>{
+    const res = await axios.patch("/users/update-account", data);
+    return res.data;
+}
+
+const changeCurrentPassword = async(data)=>{
+    const res = await axios.post("/users/change-password", data);
+    return res.data;
+}
+
+const updateUserAvatar = async(file)=>{
+    const formData = new FormData();
+    formData.append("avatar", file);
+
+    const res = await axios.patch("/users/avatar", formData, {
+        headers: {
+            "Content-Type": "multipart/form-data",
+        },
+    });
+    return res.data;
+}
+
+export {
+    loginUser,
+    registerUser,
+    logoutUser,
+    getCurrentUser,
+    updateAccountDetails,
+    changeCurrentPassword,
+    updateUserAvatar,
+}

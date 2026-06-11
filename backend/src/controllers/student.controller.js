@@ -6,6 +6,17 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import ApiError from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 
+const shuffleArray = (items) => {
+  const shuffled = [...items];
+
+  for (let index = shuffled.length - 1; index > 0; index -= 1) {
+    const randomIndex = Math.floor(Math.random() * (index + 1));
+    [shuffled[index], shuffled[randomIndex]] = [shuffled[randomIndex], shuffled[index]];
+  }
+
+  return shuffled;
+};
+
 const buildDetailedSubmission = async (submission) => {
   const questions = await Question.find({
     _id: { $in: submission.answers.map((answer) => answer.questionId) },
@@ -19,6 +30,7 @@ const buildDetailedSubmission = async (submission) => {
     return {
       ...answer.toObject(),
       question: question?.question,
+      type: question?.type,
       options: question?.options,
       correctAnswer: question?.correctAnswer,
       marks: question?.marks,
@@ -106,6 +118,9 @@ const getAvailableTests = asyncHandler(async (req, res) => {
         totalQuestions: 1,
         isAttempted: 1,
         totalMarks: 1,
+        negativeMarkingEnabled: 1,
+        negativeMarkingValue: 1,
+        randomizeQuestions: 1,
       },
     },
     {
@@ -158,8 +173,9 @@ const getTestQuestions = asyncHandler(async (req, res) => {
     marks: 1,
     type: 1,
   });
+  const orderedQuestions = test.randomizeQuestions ? shuffleArray(questions) : questions;
 
-  const questionsWithoutAnswers = questions.map((q) => ({
+  const questionsWithoutAnswers = orderedQuestions.map((q) => ({
     _id: q._id,
     question: q.question,
     type: q.type,
@@ -178,8 +194,11 @@ const getTestQuestions = asyncHandler(async (req, res) => {
             title: test.title,
             subject: test.subject,
             duration: test.duration,
-            totalQuestions: questions.length,
-            totalMarks: questions.reduce((sum, q) => sum + q.marks, 0),
+            totalQuestions: orderedQuestions.length,
+            totalMarks: orderedQuestions.reduce((sum, q) => sum + q.marks, 0),
+            negativeMarkingEnabled: test.negativeMarkingEnabled,
+            negativeMarkingValue: test.negativeMarkingValue,
+            randomizeQuestions: test.randomizeQuestions,
           },
           questions: questionsWithoutAnswers,
         },
@@ -214,12 +233,10 @@ const submitAnswers = asyncHandler(async (req, res) => {
   if (now > test.endTime) {
     throw new ApiError(403, "Test has ended");
   }
-
-  // Validate submission time against test duration
+ 
   const maxAllowedSeconds = test.duration * 60;
   const timeTakenSeconds = Number(timeTaken);
-
-  // Allow 5 second buffer for network delays, but warn if submission exceeds duration
+ 
   const toleranceSeconds = 5;
   if (timeTakenSeconds > maxAllowedSeconds + toleranceSeconds) {
     throw new ApiError(
@@ -266,7 +283,12 @@ const submitAnswers = asyncHandler(async (req, res) => {
 
     const selectedAnswer = String(submittedAnswer.selectedAnswer || "").trim();
     const isCorrect = question.correctAnswer === selectedAnswer;
-    const marksObtained = isCorrect ? question.marks : 0;
+    const wasAnswered = Boolean(selectedAnswer);
+    const negativePenalty =
+      test.negativeMarkingEnabled && wasAnswered && !isCorrect
+        ? Math.min(Number(test.negativeMarkingValue) || 0, Number(question.marks) || 0)
+        : 0;
+    const marksObtained = isCorrect ? question.marks : -negativePenalty;
     totalScore += marksObtained;
 
     processedAnswers.push({
@@ -307,7 +329,7 @@ const submitAnswers = asyncHandler(async (req, res) => {
 
   const populatedSubmission = await Submission.findById(submission._id).populate(
     "testId",
-    "title subject duration"
+    "title subject duration negativeMarkingEnabled negativeMarkingValue randomizeQuestions"
   );
 
   return res
@@ -332,7 +354,7 @@ const getStudentTestResult = asyncHandler(async (req, res) => {
     studentId: req.user._id,
     testId,
   })
-    .populate("testId", "title subject duration startTime endTime")
+    .populate("testId", "title subject duration startTime endTime negativeMarkingEnabled negativeMarkingValue randomizeQuestions")
     .sort({ createdAt: -1 });
 
   if (!submission) {
@@ -351,7 +373,7 @@ const getStudentTestResult = asyncHandler(async (req, res) => {
 
 const getStudentResults = asyncHandler(async (req, res) => {
   const submissions = await Submission.find({ studentId: req.user._id })
-    .populate("testId", "title subject duration totalMarks")
+    .populate("testId", "title subject duration totalMarks negativeMarkingEnabled negativeMarkingValue randomizeQuestions")
     .sort({ createdAt: -1 });
 
   return res
@@ -372,7 +394,7 @@ const getSubmissionDetails = asyncHandler(async (req, res) => {
   const submission = await Submission.findOne({
     _id: submissionId,
     studentId: req.user._id,
-  }).populate("testId", "title subject duration");
+  }).populate("testId", "title subject duration negativeMarkingEnabled negativeMarkingValue randomizeQuestions");
 
   if (!submission) {
     throw new ApiError(404, "Submission not found");
@@ -390,10 +412,8 @@ const getSubmissionDetails = asyncHandler(async (req, res) => {
       )
     );
 });
-
-// Helper function to cleanup duplicate submissions (for admin/debug purposes)
-const cleanupDuplicateSubmissions = asyncHandler(async (req, res) => {
-  // Keep only the latest submission per student per test
+ 
+const cleanupDuplicateSubmissions = asyncHandler(async (req, res) => { 
   const submissions = await Submission.find().sort({ studentId: 1, testId: 1, createdAt: -1 });
 
   const seen = new Map();
@@ -402,11 +422,9 @@ const cleanupDuplicateSubmissions = asyncHandler(async (req, res) => {
   for (const submission of submissions) {
     const key = `${submission.studentId.toString()}_${submission.testId.toString()}`;
 
-    if (seen.has(key)) {
-      // This is a duplicate, mark for deletion
+    if (seen.has(key)) { 
       idsToDelete.push(submission._id);
-    } else {
-      // First occurrence, keep it
+    } else { 
       seen.set(key, submission._id);
     }
   }

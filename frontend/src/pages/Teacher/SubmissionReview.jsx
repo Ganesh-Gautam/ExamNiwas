@@ -1,31 +1,17 @@
-import { AlertCircle, BadgeCheck, Clock3, ClipboardList, FileSpreadsheet, Users } from "../../lib/lucide-react.jsx";
+import { AlertCircle, BadgeCheck, FileSpreadsheet } from "../../lib/lucide-react.jsx";
 import { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Link, useParams } from "react-router-dom";
 import toast from "react-hot-toast";
-import {
-  fetchTeacherSubmissionDetails,
-  evaluateTeacherSubmission,
-} from "../../features/submissions/submissionSlice.js";
+import { evaluateTeacherSubmission, fetchTeacherSubmissionDetails } from "../../features/submissions/submissionSlice.js";
 import { extractApiErrorMessage } from "../../utils/apiError.js";
-
-const formatDuration = (seconds) => {
-  const totalSeconds = Number(seconds) || 0;
-  const minutes = Math.floor(totalSeconds / 60);
-  const remainingSeconds = totalSeconds % 60;
-
-  if (remainingSeconds === 0) {
-    return `${minutes} min`;
-  }
-
-  return `${minutes} min ${remainingSeconds} sec`;
-};
+import { cn, EmptyState, PageHero, SectionCard, StatCard, inputClass, primaryButtonClass, secondaryButtonClass, pageWrapClass, surfaceClass, noticeClass } from "../../components/common/ui.jsx";
 
 export default function SubmissionReview() {
   const { submissionId } = useParams();
   const dispatch = useDispatch();
   const { submissionDetails, isLoading, isSaving, error } = useSelector((state) => state.submissions);
-  const [gradedMarks, setGradedMarks] = useState({});
+  const [gradedMarksBySubmission, setGradedMarksBySubmission] = useState({});
 
   useEffect(() => {
     dispatch(fetchTeacherSubmissionDetails({ submissionId }));
@@ -37,28 +23,33 @@ export default function SubmissionReview() {
     }
   }, [error]);
 
-  useEffect(() => {
-    if (!submissionDetails) {
-      return;
-    }
-
+  const submission = submissionDetails?.submission;
+  const answers = useMemo(() => submissionDetails?.answers ?? [], [submissionDetails?.answers]);
+  const initialGradedMarks = useMemo(() => {
     const initialMarks = {};
-    submissionDetails.answers?.forEach((answer) => {
+    answers.forEach((answer) => {
       if (answer.type === "written") {
         initialMarks[answer.questionId] = answer.marksObtained || 0;
       }
     });
-    setGradedMarks(initialMarks);
-  }, [submissionDetails]);
+    return initialMarks;
+  }, [answers]);
 
-  const submission = submissionDetails?.submission;
-  const answers = submissionDetails?.answers ?? [];
+  const gradedMarks = {
+    ...initialGradedMarks,
+    ...(gradedMarksBySubmission[submissionId] || {}),
+  };
   const pending = submission?.status === "submitted";
 
+  const totalWritten = useMemo(() => answers.filter((answer) => answer.type === "written").length, [answers]);
+
   const handleChangeMarks = (questionId, value) => {
-    setGradedMarks((current) => ({
+    setGradedMarksBySubmission((current) => ({
       ...current,
-      [questionId]: value,
+      [submissionId]: {
+        ...(current[submissionId] || {}),
+        [questionId]: value,
+      },
     }));
   };
 
@@ -78,76 +69,53 @@ export default function SubmissionReview() {
     }
   };
 
-  const totalWritten = useMemo(
-    () => answers.filter((answer) => answer.type === "written").length,
-    [answers]
-  );
-
-  if (isLoading || !submission) {
+  if (isLoading) {
     return (
-      <div className="rounded-4xl border border-white/80 bg-white/80 px-6 py-12 text-sm text-zinc-500 shadow-[0_24px_80px_rgba(15,23,42,0.08)]">
+      <div className={noticeClass}>
         Loading submission details...
       </div>
     );
   }
 
+  if (!submission) {
+    return (
+      <EmptyState
+        icon={<AlertCircle size={24} />}
+        title="Submission unavailable"
+        description="This submission could not be loaded for review."
+        action={<Link to="/teacher/tests/results" className={primaryButtonClass}>Back to results</Link>}
+      />
+    );
+  }
+
   return (
-    <div className="space-y-6">
-      <section className="rounded-4xl border border-amber-200/80 bg-[linear-gradient(135deg,rgba(255,251,235,0.96),rgba(255,255,255,0.96)),radial-gradient(circle_at_top_right,rgba(251,191,36,0.15),transparent_30%)] p-8 shadow-[0_24px_70px_rgba(120,53,15,0.1)]">
-        <p className="text-sm font-semibold uppercase tracking-[0.3em] text-amber-700">Review submission</p>
-        <h1 className="mt-3 font-['Georgia'] text-4xl font-bold text-zinc-950">{submission.testId?.title}</h1>
-        <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-600">
-          Review the student answers and assign marks for written questions. This page is for teacher evaluation only.
-        </p>
+    <div className={`${pageWrapClass} page-enter`}>
+      <PageHero
+        eyebrow="Review Submission"
+        title={submission.testId?.title}
+        description="Review each answer, assign marks to written responses, and finalize the student submission."
+        accent="amber"
+        actions={<Link to="/teacher/tests/results" className={secondaryButtonClass}><FileSpreadsheet size={16} />Back to results</Link>}
+        stats={[
+          <StatCard key="student" label="Student" value={submission.studentId?.fullName || "Unknown"} hint={submission.studentId?.email || "Student submission"} />,
+          <StatCard key="questions" label="Questions" value={answers.length} hint="Total submitted responses." />,
+          <StatCard key="written" label="Written Items" value={totalWritten} hint="Require manual grading." />,
+          <StatCard key="status" label="Status" value={pending ? "Pending" : "Evaluated"} hint={pending ? "Awaiting final review." : "Marks already saved."} />,
+        ]}
+      />
 
-        <div className="mt-6 grid gap-4 md:grid-cols-4">
-          <div className="rounded-3xl border border-white/80 bg-white/80 p-4">
-            <p className="text-xs uppercase tracking-[0.25em] text-zinc-500">Student</p>
-            <p className="mt-2 text-lg font-black text-zinc-950">{submission.studentId?.fullName || "Unknown"}</p>
-          </div>
-          <div className="rounded-3xl border border-white/80 bg-white/80 p-4">
-            <p className="text-xs uppercase tracking-[0.25em] text-zinc-500">Question count</p>
-            <p className="mt-2 text-lg font-black text-zinc-950">{answers.length}</p>
-          </div>
-          <div className="rounded-3xl border border-white/80 bg-white/80 p-4">
-            <p className="text-xs uppercase tracking-[0.25em] text-zinc-500">Written items</p>
-            <p className="mt-2 text-lg font-black text-zinc-950">{totalWritten}</p>
-          </div>
-          <div className="rounded-3xl border border-white/80 bg-white/80 p-4">
-            <p className="text-xs uppercase tracking-[0.25em] text-zinc-500">Status</p>
-            <p className="mt-2 text-lg font-black text-zinc-950">{pending ? "Pending" : "Evaluated"}</p>
-          </div>
-        </div>
-      </section>
-
-      <section className="rounded-4xl border border-white/80 bg-white/90 p-6 shadow-[0_20px_70px_rgba(15,23,42,0.08)]">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h2 className="text-2xl font-black text-zinc-950">Student answers</h2>
-            <p className="text-sm text-zinc-500">Enter marks for written responses and save your evaluation.</p>
-          </div>
-          <div className="flex flex-wrap gap-3">
-            <Link
-              to="/teacher/tests/results"
-              className="inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-50"
-            >
-              <FileSpreadsheet size={16} />
-              Back to results
-            </Link>
-          </div>
-        </div>
-
-        <div className="mt-6 space-y-4">
+      <SectionCard title="Student Answers" description="MCQ items show correctness immediately. Written responses can be graded directly inline.">
+        <div className="space-y-4">
           {answers.map((answer, index) => (
-            <article key={answer.questionId} className="rounded-3xl border border-zinc-200 bg-zinc-50/70 p-5">
+            <article key={answer.questionId} className={cn(surfaceClass, "p-5")}>
               <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div>
-                  <h3 className="text-lg font-black text-zinc-950">Question {index + 1}</h3>
-                  <p className="mt-2 text-sm leading-6 text-zinc-700">{answer.question}</p>
+                  <h3 className="text-lg font-semibold text-slate-950">Question {index + 1}</h3>
+                  <p className="mt-2 text-sm leading-6 text-slate-700">{answer.question}</p>
                 </div>
-                <div className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-zinc-700">
+                <span className="rounded-full bg-slate-50/95 px-3 py-1 text-xs font-semibold text-slate-700 dark:bg-slate-950/80 dark:text-slate-100">
                   {answer.type === "written" ? "Written" : "MCQ"}
-                </div>
+                </span>
               </div>
 
               {answer.type === "mcq" ? (
@@ -159,12 +127,12 @@ export default function SubmissionReview() {
                     return (
                       <div
                         key={`${answer.questionId}-${optionIndex}`}
-                        className={`rounded-2xl border px-4 py-3 text-sm ${
+                        className={`rounded-[1.25rem] border px-4 py-3 text-sm ${
                           isCorrectOption
                             ? "border-emerald-200 bg-emerald-50 text-emerald-900"
                             : isChosenOption
                               ? "border-rose-200 bg-rose-50 text-rose-800"
-                              : "border-zinc-200 bg-white text-zinc-700"
+                              : "border-slate-200 bg-slate-50/95 text-slate-700 dark:bg-slate-950/80 dark:text-slate-100"
                         }`}
                       >
                         <span className="font-semibold">{String.fromCharCode(65 + optionIndex)}.</span> {option}
@@ -173,30 +141,30 @@ export default function SubmissionReview() {
                   })}
                 </div>
               ) : (
-                <div className="mt-5 rounded-2xl border border-zinc-200 bg-white px-4 py-4 text-sm text-zinc-700">
-                  <p className="font-semibold text-zinc-900">Student response</p>
+                <div className="mt-5 rounded-3xl border border-slate-200 bg-slate-50/95 px-4 py-4 text-sm text-slate-700 dark:bg-slate-950/80 dark:text-slate-100">
+                  <p className="font-semibold text-slate-900">Student response</p>
                   <p className="mt-2 whitespace-pre-line">{answer.answerText || "No answer provided."}</p>
                 </div>
               )}
 
               <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                <div className="rounded-full bg-white px-4 py-2 text-sm text-zinc-700">
+                <div className="rounded-[1.25rem] bg-white px-4 py-3 text-sm text-slate-700">
                   Marks available: <span className="font-semibold">{answer.marks}</span>
                 </div>
                 {answer.type === "written" ? (
-                  <label className="rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm">
-                    <span className="font-semibold text-zinc-700">Marks awarded</span>
+                  <label className="rounded-[1.25rem] border border-slate-200 bg-white px-4 py-3 text-sm">
+                    <span className="font-semibold text-slate-700">Marks awarded</span>
                     <input
                       type="number"
                       min="0"
                       max={answer.marks}
                       value={gradedMarks[answer.questionId] ?? 0}
                       onChange={(event) => handleChangeMarks(answer.questionId, Math.max(0, Number(event.target.value || 0)))}
-                      className="mt-2 w-full rounded-2xl border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm text-zinc-900 outline-none focus:border-emerald-400"
+                      className={inputClass}
                     />
                   </label>
                 ) : (
-                  <div className="rounded-full bg-white px-4 py-2 text-sm text-zinc-700">
+                  <div className="rounded-[1.25rem] bg-white px-4 py-3 text-sm text-slate-700">
                     Marks awarded: <span className="font-semibold">{answer.marksObtained} / {answer.marks}</span>
                   </div>
                 )}
@@ -206,22 +174,17 @@ export default function SubmissionReview() {
         </div>
 
         <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-sm text-zinc-500">
+          <p className="text-sm text-slate-500">
             {pending
-              ? "Only written answers require grading. Fill in marks and save evaluation."
-              : "Evaluation completed. Update marks and save again if needed."}
+              ? "Only written answers require grading. Assign marks and save when ready."
+              : "This paper has already been evaluated. You can still update marks and save again if needed."}
           </p>
-          <button
-            type="button"
-            onClick={handleSaveEvaluation}
-            disabled={isSaving || totalWritten === 0}
-            className="inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-70"
-          >
+          <button type="button" onClick={handleSaveEvaluation} disabled={isSaving || totalWritten === 0} className={primaryButtonClass}>
             <BadgeCheck size={16} />
             {isSaving ? "Saving..." : "Save evaluation"}
           </button>
         </div>
-      </section>
+      </SectionCard>
     </div>
   );
 }

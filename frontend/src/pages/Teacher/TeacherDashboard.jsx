@@ -1,13 +1,11 @@
-import { CalendarDays, Clock3, ClipboardList, PenSquare, PlusCircle, TimerReset, Edit2, Trash2, X, Save, FileSpreadsheet } from "../../lib/lucide-react.jsx";
-import { useEffect, useState } from "react";
+import { CalendarDays, ClipboardList, Clock3, Edit2, FileSpreadsheet, PenSquare, PlusCircle, Save, TimerReset, Trash2, X } from "../../lib/lucide-react.jsx";
+import { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Link, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
-import { createTeacherTest, fetchTeacherTests, updateTeacherTest, deleteTeacherTest } from "../../features/tests/testSlice.js";
+import { createTeacherTest, deleteTeacherTest, fetchTeacherTests, updateTeacherTest } from "../../features/tests/testSlice.js";
 import { extractApiErrorMessage } from "../../utils/apiError.js";
-
-const inputClass =
-  "mt-2 w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 outline-none transition placeholder:text-zinc-400 focus:border-amber-400";
+import { cn, EmptyState, PageHero, SectionCard, StatCard, inputClass, noticeClass, primaryButtonClass, secondaryButtonClass, pageWrapClass, surfaceClass } from "../../components/common/ui.jsx";
 
 export default function TeacherDashboard() {
   const dispatch = useDispatch();
@@ -20,6 +18,9 @@ export default function TeacherDashboard() {
     duration: 60,
     startTime: "",
     endTime: "",
+    negativeMarkingEnabled: false,
+    negativeMarkingValue: 0,
+    randomizeQuestions: false,
   });
   const [editingTestId, setEditingTestId] = useState(null);
   const [editForm, setEditForm] = useState({
@@ -28,6 +29,9 @@ export default function TeacherDashboard() {
     duration: 60,
     startTime: "",
     endTime: "",
+    negativeMarkingEnabled: false,
+    negativeMarkingValue: 0,
+    randomizeQuestions: false,
   });
   const [deleteConfirmId, setDeleteConfirmId] = useState(null);
 
@@ -35,9 +39,17 @@ export default function TeacherDashboard() {
     dispatch(fetchTeacherTests());
   }, [dispatch]);
 
+  const pendingTests = useMemo(
+    () => items.filter((test) => new Date(test.endTime) > new Date()).length,
+    [items]
+  );
+
   const handleChange = (event) => {
-    const { name, value } = event.target;
-    setForm((current) => ({ ...current, [name]: value }));
+    const { name, value, type, checked } = event.target;
+    setForm((current) => ({
+      ...current,
+      [name]: type === "checkbox" ? checked : value,
+    }));
   };
 
   const openEditModal = (test) => {
@@ -48,23 +60,22 @@ export default function TeacherDashboard() {
       duration: test.duration,
       startTime: test.startTime.slice(0, 16),
       endTime: test.endTime.slice(0, 16),
+      negativeMarkingEnabled: Boolean(test.negativeMarkingEnabled),
+      negativeMarkingValue: test.negativeMarkingValue || 0,
+      randomizeQuestions: Boolean(test.randomizeQuestions),
     });
   };
 
   const closeEditModal = () => {
     setEditingTestId(null);
-    setEditForm({
-      title: "",
-      subject: "",
-      duration: 60,
-      startTime: "",
-      endTime: "",
-    });
   };
 
   const handleEditFormChange = (event) => {
-    const { name, value } = event.target;
-    setEditForm((current) => ({ ...current, [name]: value }));
+    const { name, value, type, checked } = event.target;
+    setEditForm((current) => ({
+      ...current,
+      [name]: type === "checkbox" ? checked : value,
+    }));
   };
 
   const handleUpdateTest = async (event) => {
@@ -80,14 +91,16 @@ export default function TeacherDashboard() {
             duration: Number(editForm.duration),
             startTime: editForm.startTime,
             endTime: editForm.endTime,
+            negativeMarkingEnabled: editForm.negativeMarkingEnabled,
+            negativeMarkingValue: Number(editForm.negativeMarkingValue) || 0,
+            randomizeQuestions: editForm.randomizeQuestions,
           },
         })
       ).unwrap();
       toast.success("Test updated successfully");
       closeEditModal();
     } catch (error) {
-      const message = extractApiErrorMessage(error);
-      toast.error(message);
+      toast.error(extractApiErrorMessage(error));
     }
   };
 
@@ -97,8 +110,7 @@ export default function TeacherDashboard() {
       toast.success("Test deleted successfully");
       setDeleteConfirmId(null);
     } catch (error) {
-      const message = extractApiErrorMessage(error);
-      toast.error(message);
+      toast.error(extractApiErrorMessage(error));
     }
   };
 
@@ -107,354 +119,242 @@ export default function TeacherDashboard() {
 
     try {
       const response = await dispatch(createTeacherTest(form)).unwrap();
-      toast.success("Test created. Add MCQ questions next.");
+      toast.success("Test created. Add questions next.");
       setForm({
         title: "",
         subject: "",
         duration: 60,
         startTime: "",
         endTime: "",
+        negativeMarkingEnabled: false,
+        negativeMarkingValue: 0,
+        randomizeQuestions: false,
       });
       navigate(`/teacher/tests/${response.data._id}/questions`);
     } catch (error) {
-      const message = extractApiErrorMessage(error);
-      toast.error(message);
+      toast.error(extractApiErrorMessage(error));
     }
   };
 
   return (
-    <div className="space-y-8">
-      <section className="relative overflow-hidden rounded-4xl border border-amber-200/80 bg-[linear-gradient(135deg,rgba(255,251,235,0.95),rgba(255,237,213,0.95)),radial-gradient(circle_at_top_right,rgba(251,191,36,0.25),transparent_32%)] p-8 shadow-[0_30px_90px_rgba(120,53,15,0.12)]">
-        <div className="absolute -right-12 top-8 h-40 w-40 rounded-full bg-amber-300/30 blur-3xl" />
-        <div className="relative grid gap-8 lg:grid-cols-[1.05fr_0.95fr]">
-          <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.3em] text-amber-700">Teacher Dashboard</p>
-            <h1 className="mt-4 max-w-xl font-['Georgia'] text-4xl font-bold leading-tight text-zinc-950 sm:text-5xl">
-              Create and manage your tests with ease.
-            </h1>
-            <p className="mt-4 max-w-2xl text-base leading-7 text-zinc-700">
-              Welcome back, {user?.fullName || "Teacher"}. Create the test, add questions, and keep track of every paper from one place.
-            </p>
+    <div className={`${pageWrapClass} page-enter`}>
+      <PageHero
+        eyebrow="Teacher Dashboard"
+        title={`Welcome back, ${user?.fullName?.split(" ")[0] || "Teacher"}.`}
+        description="Create the test, add questions, and keep track of every paper from one place."
+        accent="amber"
+        actions={
+          <Link to="/teacher/tests/results" className={primaryButtonClass}>
+            <FileSpreadsheet size={16} />
+            Student results
+          </Link>
+        }
+        stats={[
+          <StatCard key="tests" label="Total Tests" value={items.length} hint="Everything created in your workspace." />, 
+          <StatCard key="active" label="Active Windows" value={pendingTests} hint="Tests still running or upcoming." />,
+        ]}
+      />
 
-            <div className="mt-8 grid gap-4 sm:grid-cols-3">
-              <div className="rounded-3xl border border-white/80 bg-white/70 p-4">
-                <p className="text-sm text-zinc-500">Your tests</p>
-                <p className="mt-2 text-3xl font-black text-zinc-950">{items.length}</p>
-              </div>
-              <div className="rounded-3xl border border-white/80 bg-white/70 p-4">
-                <p className="text-sm text-zinc-500">Total questions</p>
-                <p className="mt-2 text-3xl font-black text-zinc-950">
-                  {items.reduce((sum, test) => sum + (test.questionCount || 0), 0)}
-                </p>
-              </div> 
-            </div>
-          </div>
-
-          <form
-            onSubmit={handleSubmit}
-            className="rounded-4xl border border-white/80 bg-white/85 p-6 shadow-[0_24px_70px_rgba(15,23,42,0.1)] backdrop-blur"
-          >
-            <div className="flex items-center gap-3">
-              <div className="rounded-2xl bg-amber-100 p-3 text-amber-700">
-                <PlusCircle size={20} />
-              </div>
-              <div>
-                <h2 className="text-xl font-black text-zinc-950">Create Test</h2>
-                <p className="text-sm text-zinc-500">MCQ first, fast and teacher-friendly.</p>
-              </div>
-            </div>
-
-            <div className="mt-6 grid gap-5">
+      <section className="grid gap-6 xl:grid-cols-[420px_minmax(0,1fr)]">
+        <SectionCard
+          title="Create Test"
+          description="A cleaner form for scheduling exams and setting rules."
+        >
+          <form onSubmit={handleSubmit} className="grid gap-5">
+            <label>
+              <span className="text-sm font-semibold text-slate-700">Test title</span>
+              <input className={inputClass} name="title" value={form.title} onChange={handleChange} placeholder="Mid Term Physics Practice" required />
+            </label>
+            <label>
+              <span className="text-sm font-semibold text-slate-700">Subject</span>
+              <input className={inputClass} name="subject" value={form.subject} onChange={handleChange} placeholder="Physics" required />
+            </label>
+            <div className="grid gap-4 sm:grid-cols-3">
               <label>
-                <span className="text-sm font-semibold text-zinc-700">Test title</span>
-                <input
-                  className={inputClass}
-                  name="title"
-                  value={form.title}
-                  onChange={handleChange}
-                  placeholder="Mid Term Physics Practice"
-                  required
-                />
+                <span className="text-sm font-semibold text-slate-700">Duration</span>
+                <input className={inputClass} type="number" min="1" name="duration" value={form.duration} onChange={handleChange} required />
               </label>
-
-              <label>
-                <span className="text-sm font-semibold text-zinc-700">Subject</span>
-                <input
-                  className={inputClass}
-                  name="subject"
-                  value={form.subject}
-                  onChange={handleChange}
-                  placeholder="Physics"
-                  required
-                />
+              <label className="sm:col-span-2">
+                <span className="text-sm font-semibold text-slate-700">Start time</span>
+                <input className={inputClass} type="datetime-local" name="startTime" value={form.startTime} onChange={handleChange} required />
               </label>
-
-              <div className="grid gap-5 sm:grid-cols-3">
+            </div>
+            <label>
+              <span className="text-sm font-semibold text-slate-700">End time</span>
+              <input className={inputClass} type="datetime-local" name="endTime" value={form.endTime} onChange={handleChange} required />
+            </label>
+            <div className="rounded-3xl bg-amber-50/70 p-4 dark:bg-slate-600/70">
+              <div className="grid gap-4">
+                <label className="flex items-start gap-3">
+                  <input type="checkbox" name="negativeMarkingEnabled" checked={form.negativeMarkingEnabled} onChange={handleChange} className="mt-1 h-4 w-4 accent-amber-600" />
+                  <span>
+                    <span className="block text-sm font-semibold text-slate-900">Enable negative marking</span>
+                    <span className="block text-xs text-slate-500">Deduct marks for incorrect MCQ responses.</span>
+                  </span>
+                </label>
                 <label>
-                  <span className="text-sm font-semibold text-zinc-700">Duration (mins)</span>
-                  <input
-                    className={inputClass}
-                    type="number"
-                    min="1"
-                    name="duration"
-                    value={form.duration}
-                    onChange={handleChange}
-                    required
-                  />
+                  <span className="text-sm font-semibold text-slate-700">Deduction per wrong answer</span>
+                  <input className={inputClass} type="number" min="0" step="0.25" name="negativeMarkingValue" value={form.negativeMarkingValue} onChange={handleChange} disabled={!form.negativeMarkingEnabled} />
                 </label>
-
-                <label className="sm:col-span-2">
-                  <span className="text-sm font-semibold text-zinc-700">Start time</span>
-                  <input
-                    className={inputClass}
-                    type="datetime-local"
-                    name="startTime"
-                    value={form.startTime}
-                    onChange={handleChange}
-                    required
-                  />
+                <label className="flex items-start gap-3">
+                  <input type="checkbox" name="randomizeQuestions" checked={form.randomizeQuestions} onChange={handleChange} className="mt-1 h-4 w-4 accent-amber-600" />
+                  <span>
+                    <span className="block text-sm font-semibold text-slate-900">Randomize question order</span>
+                    <span className="block text-xs text-slate-500">Shuffle the order for each student attempt.</span>
+                  </span>
                 </label>
               </div>
-
-              <label>
-                <span className="text-sm font-semibold text-zinc-700">End time</span>
-                <input
-                  className={inputClass}
-                  type="datetime-local"
-                  name="endTime"
-                  value={form.endTime}
-                  onChange={handleChange}
-                  required
-                />
-              </label>
             </div>
-
-            <button
-              type="submit"
-              disabled={isSaving}
-              className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-zinc-950 px-5 py-3.5 text-sm font-semibold text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-70"
-            >
+            <button type="submit" disabled={isSaving} className={`${primaryButtonClass} w-full`}>
               <PenSquare size={16} />
               {isSaving ? "Creating test..." : "Create test and add questions"}
             </button>
           </form>
-        </div>
-      </section>
+        </SectionCard>
 
-      <section className="rounded-4xl border border-white/80 bg-white/80 p-6 shadow-[0_24px_80px_rgba(15,23,42,0.08)]">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h2 className="text-2xl font-black text-zinc-950">Your Tests</h2>
-            <p className="text-sm text-zinc-500">Open any test and continue adding MCQ questions.</p>
-          </div>
-          <Link
-            to="/teacher/tests/results"
-            className="inline-flex items-center gap-2 rounded-full bg-zinc-950 px-4 py-2 text-sm font-semibold text-white transition hover:bg-zinc-800"
-          >
-            <FileSpreadsheet size={16} />
-            Student results
-          </Link>
-        </div>
+        <SectionCard
+          title="Your Tests"
+          description="Open any test, adjust its settings, or continue building the question set."
+        >
+          {isLoading ? (
+            <div className={noticeClass}>
+              Loading tests...
+            </div>
+          ) : items.length === 0 ? (
+            <EmptyState
+              title="No tests created yet"
+              description="Create your first test from the form on the left and then continue into question authoring."
+            />
+          ) : (
+            <div className="grid gap-4 xl:grid-cols-2">
+              {items.map((test) => (
+                <article
+                  key={test._id}
+                  className={cn(surfaceClass, "p-5 transition duration-200 hover:-translate-y-1 hover:shadow-[0_24px_60px_rgba(15,23,42,0.08)]")}
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-[0.25em] text-amber-700">{test.subject}</p>
+                      <h3 className="mt-2 text-2xl font-semibold tracking-[-0.03em] text-slate-950">{test.title}</h3>
+                    </div>
+                    <span className="rounded-full bg-slate-950/85 px-3 py-1 text-xs font-semibold text-white dark:bg-slate-800/70">MCQ</span>
+                  </div>
 
-        {isLoading ? (
-          <div className="mt-6 rounded-3xl border border-dashed border-zinc-200 bg-zinc-50 px-6 py-10 text-sm text-zinc-500">
-            Loading tests...
-          </div>
-        ) : items.length === 0 ? (
-          <div className="mt-6 rounded-3xl border border-dashed border-zinc-200 bg-zinc-50 px-6 py-10 text-sm text-zinc-500">
-            No tests yet. Create your first MCQ test from the form above.
-          </div>
-        ) : (
-          <div className="mt-6 grid gap-4 xl:grid-cols-2">
-            {items.map((test) => (
-              <article
-                key={test._id}
-                className="rounded-[1.75rem] border border-zinc-200 bg-[linear-gradient(180deg,#fffdf8_0%,#ffffff_100%)] p-5 shadow-[0_18px_45px_rgba(15,23,42,0.05)]"
-              >
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.25em] text-amber-700">{test.subject}</p>
-                    <h3 className="mt-2 text-2xl font-black text-zinc-950">{test.title}</h3>
+                  <div className="mt-5 grid gap-3 text-sm text-slate-600 sm:grid-cols-2">
+                    <div className="flex items-center gap-2"><TimerReset size={16} className="text-amber-600" />{test.duration} minutes</div>
+                    <div className="flex items-center gap-2"><ClipboardList size={16} className="text-amber-600" />{test.questionCount || 0} questions</div>
+                    <div className="flex items-center gap-2"><Clock3 size={16} className="text-amber-600" />{test.totalMarks || 0} marks</div>
+                    <div className="flex items-center gap-2"><CalendarDays size={16} className="text-amber-600" />{new Date(test.startTime).toLocaleString()}</div>
                   </div>
-                  <div className="rounded-full bg-zinc-950 px-3 py-1 text-xs font-semibold text-white">
-                    MCQ
-                  </div>
-                </div>
 
-                <div className="mt-5 grid gap-3 text-sm text-zinc-600 sm:grid-cols-2">
-                  <div className="flex items-center gap-2">
-                    <TimerReset size={16} className="text-amber-600" />
-                    {test.duration} minutes
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <ClipboardList size={16} className="text-amber-600" />
-                    {test.questionCount || 0} questions
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Clock3 size={16} className="text-amber-600" />
-                    {test.totalMarks || 0} marks
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <CalendarDays size={16} className="text-amber-600" />
-                    {new Date(test.startTime).toLocaleString()}
-                  </div>
-                </div>
-
-                <div className="mt-5 flex items-center justify-between gap-3 border-t border-zinc-100 pt-4">
-                  <p className="text-sm text-zinc-500">Ends {new Date(test.endTime).toLocaleString()}</p>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => openEditModal(test)}
-                      className="inline-flex items-center gap-2 rounded-full bg-blue-100 px-3 py-2 text-sm font-semibold text-blue-700 transition hover:bg-blue-200"
-                      title="Edit test"
-                    >
-                      <Edit2 size={14} />
+                  <div className="mt-5 flex flex-wrap gap-3 border-t border-slate-100 pt-4">
+                    <button onClick={() => openEditModal(test)} className={secondaryButtonClass} type="button">
+                      <Edit2 size={16} />
+                      Edit
                     </button>
-                    <button
-                      onClick={() => setDeleteConfirmId(test._id)}
-                      className="inline-flex items-center gap-2 rounded-full bg-red-100 px-3 py-2 text-sm font-semibold text-red-700 transition hover:bg-red-200"
-                      title="Delete test"
-                    >
-                      <Trash2 size={14} />
+                    <button onClick={() => setDeleteConfirmId(test._id)} className="inline-flex items-center justify-center gap-2 rounded-2xl border border-rose-200 bg-rose-50 px-5 py-3 text-sm font-semibold text-rose-700 transition hover:bg-rose-100" type="button">
+                      <Trash2 size={16} />
+                      Delete
                     </button>
-                    <Link
-                      to={`/teacher/tests/${test._id}/questions`}
-                      className="inline-flex items-center gap-2 rounded-full bg-amber-500 px-4 py-2 text-sm font-semibold text-zinc-950 transition hover:bg-amber-400"
-                    >
+                    <Link to={`/teacher/tests/${test._id}/questions`} className={`${primaryButtonClass} flex-1 bg-amber-500 text-slate-950 hover:bg-amber-400`}>
                       <PlusCircle size={16} />
                       Add questions
                     </Link>
                   </div>
-                </div>
 
-                {deleteConfirmId === test._id && (
-                  <div className="mt-4 rounded-lg border border-red-200 bg-red-50 p-4">
-                    <p className="text-sm font-semibold text-red-900">Delete this test?</p>
-                    <p className="mt-1 text-xs text-red-700">All questions in this test will be permanently removed.</p>
-                    <div className="mt-3 flex gap-2">
-                      <button
-                        onClick={() => handleDeleteTest(test._id)}
-                        disabled={isSaving}
-                        className="flex-1 rounded-lg bg-red-600 px-3 py-2 text-sm font-semibold text-white transition hover:bg-red-700 disabled:opacity-70"
-                      >
-                        {isSaving ? "Deleting..." : "Delete"}
-                      </button>
-                      <button
-                        onClick={() => setDeleteConfirmId(null)}
-                        disabled={isSaving}
-                        className="flex-1 rounded-lg bg-zinc-200 px-3 py-2 text-sm font-semibold text-zinc-900 transition hover:bg-zinc-300 disabled:opacity-70"
-                      >
-                        Cancel
-                      </button>
+                  {deleteConfirmId === test._id ? (
+                    <div className="mt-4 rounded-3xl border border-rose-200 bg-rose-50 p-4">
+                      <p className="text-sm font-semibold text-rose-900">Delete this test?</p>
+                      <p className="mt-1 text-xs text-rose-700">All questions in this test will also be removed.</p>
+                      <div className="mt-3 flex gap-3">
+                        <button onClick={() => handleDeleteTest(test._id)} disabled={isSaving} className="flex-1 rounded-2xl bg-rose-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-rose-700 disabled:opacity-60" type="button">
+                          {isSaving ? "Deleting..." : "Delete"}
+                        </button>
+                        <button onClick={() => setDeleteConfirmId(null)} disabled={isSaving} className="flex-1 rounded-2xl bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 disabled:opacity-60" type="button">
+                          Cancel
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                )}
-              </article>
-            ))}
-          </div>
-        )}
+                  ) : null}
+                </article>
+              ))}
+            </div>
+          )}
+        </SectionCard>
+      </section>
 
-        {editingTestId && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-            <div className="w-full max-w-2xl rounded-3xl bg-white p-6 shadow-xl">
-              <div className="flex items-center justify-between">
-                <h2 className="text-2xl font-black text-zinc-950">Edit Test</h2>
-                <button
-                  onClick={closeEditModal}
-                  className="rounded-full p-2 text-zinc-500 transition hover:bg-zinc-100"
-                >
-                  <X size={24} />
+      {editingTestId ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 p-4 backdrop-blur-sm">
+          <div className={cn(surfaceClass, "w-full max-w-2xl p-6") }>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-500">Edit Test</p>
+                <h2 className="mt-2 text-2xl font-semibold tracking-[-0.03em] text-slate-950">Update exam settings</h2>
+              </div>
+              <button onClick={closeEditModal} className="rounded-full p-2 text-slate-500 transition hover:bg-slate-100" type="button">
+                <X size={22} />
+              </button>
+            </div>
+
+            <form onSubmit={handleUpdateTest} className="mt-6 grid gap-5">
+              <label>
+                <span className="text-sm font-semibold text-slate-700">Test title</span>
+                <input className={inputClass} name="title" value={editForm.title} onChange={handleEditFormChange} required />
+              </label>
+              <label>
+                <span className="text-sm font-semibold text-slate-700">Subject</span>
+                <input className={inputClass} name="subject" value={editForm.subject} onChange={handleEditFormChange} required />
+              </label>
+              <div className="grid gap-4 sm:grid-cols-3">
+                <label>
+                  <span className="text-sm font-semibold text-slate-700">Duration</span>
+                  <input className={inputClass} type="number" min="1" name="duration" value={editForm.duration} onChange={handleEditFormChange} required />
+                </label>
+                <label className="sm:col-span-2">
+                  <span className="text-sm font-semibold text-slate-700">Start time</span>
+                  <input className={inputClass} type="datetime-local" name="startTime" value={editForm.startTime} onChange={handleEditFormChange} required />
+                </label>
+              </div>
+              <label>
+                <span className="text-sm font-semibold text-slate-700">End time</span>
+                <input className={inputClass} type="datetime-local" name="endTime" value={editForm.endTime} onChange={handleEditFormChange} required />
+              </label>
+              <div className="rounded-3xl border border-amber-100 bg-amber-50/70 p-4">
+                <div className="grid gap-4">
+                  <label className="flex items-start gap-3">
+                    <input type="checkbox" name="negativeMarkingEnabled" checked={editForm.negativeMarkingEnabled} onChange={handleEditFormChange} className="mt-1 h-4 w-4 accent-amber-600" />
+                    <span>
+                      <span className="block text-sm font-semibold text-slate-900">Enable negative marking</span>
+                      <span className="block text-xs text-slate-500">Deduct marks on incorrect MCQ responses.</span>
+                    </span>
+                  </label>
+                  <label>
+                    <span className="text-sm font-semibold text-slate-700">Deduction per wrong answer</span>
+                    <input className={inputClass} type="number" min="0" step="0.25" name="negativeMarkingValue" value={editForm.negativeMarkingValue} onChange={handleEditFormChange} disabled={!editForm.negativeMarkingEnabled} />
+                  </label>
+                  <label className="flex items-start gap-3">
+                    <input type="checkbox" name="randomizeQuestions" checked={editForm.randomizeQuestions} onChange={handleEditFormChange} className="mt-1 h-4 w-4 accent-amber-600" />
+                    <span>
+                      <span className="block text-sm font-semibold text-slate-900">Randomize question order</span>
+                      <span className="block text-xs text-slate-500">Shuffle sequence for student attempts.</span>
+                    </span>
+                  </label>
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <button type="submit" disabled={isSaving} className={`${primaryButtonClass} flex-1`}>
+                  <Save size={16} />
+                  {isSaving ? "Saving..." : "Save changes"}
+                </button>
+                <button type="button" onClick={closeEditModal} disabled={isSaving} className={`${secondaryButtonClass} flex-1`}>
+                  <X size={16} />
+                  Cancel
                 </button>
               </div>
-
-              <form onSubmit={handleUpdateTest} className="mt-6 space-y-5">
-                <label>
-                  <span className="text-sm font-semibold text-zinc-700">Test title</span>
-                  <input
-                    className={inputClass}
-                    name="title"
-                    value={editForm.title}
-                    onChange={handleEditFormChange}
-                    placeholder="Mid Term Physics Practice"
-                    required
-                  />
-                </label>
-
-                <label>
-                  <span className="text-sm font-semibold text-zinc-700">Subject</span>
-                  <input
-                    className={inputClass}
-                    name="subject"
-                    value={editForm.subject}
-                    onChange={handleEditFormChange}
-                    placeholder="Physics"
-                    required
-                  />
-                </label>
-
-                <div className="grid gap-5 sm:grid-cols-3">
-                  <label>
-                    <span className="text-sm font-semibold text-zinc-700">Duration (mins)</span>
-                    <input
-                      className={inputClass}
-                      type="number"
-                      min="1"
-                      name="duration"
-                      value={editForm.duration}
-                      onChange={handleEditFormChange}
-                      required
-                    />
-                  </label>
-
-                  <label className="sm:col-span-2">
-                    <span className="text-sm font-semibold text-zinc-700">Start time</span>
-                    <input
-                      className={inputClass}
-                      type="datetime-local"
-                      name="startTime"
-                      value={editForm.startTime}
-                      onChange={handleEditFormChange}
-                      required
-                    />
-                  </label>
-                </div>
-
-                <label>
-                  <span className="text-sm font-semibold text-zinc-700">End time</span>
-                  <input
-                    className={inputClass}
-                    type="datetime-local"
-                    name="endTime"
-                    value={editForm.endTime}
-                    onChange={handleEditFormChange}
-                    required
-                  />
-                </label>
-
-                <div className="flex gap-3 pt-4">
-                  <button
-                    type="submit"
-                    disabled={isSaving}
-                    className="flex-1 inline-flex items-center justify-center gap-2 rounded-2xl bg-zinc-950 px-5 py-3.5 text-sm font-semibold text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-70"
-                  >
-                    <Save size={16} />
-                    {isSaving ? "Saving..." : "Save changes"}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={closeEditModal}
-                    disabled={isSaving}
-                    className="flex-1 inline-flex items-center justify-center gap-2 rounded-2xl bg-zinc-200 px-5 py-3.5 text-sm font-semibold text-zinc-900 transition hover:bg-zinc-300 disabled:cursor-not-allowed disabled:opacity-70"
-                  >
-                    <X size={16} />
-                    Cancel
-                  </button>
-                </div>
-              </form>
-            </div>
+            </form>
           </div>
-        )}
-      </section>
+        </div>
+      ) : null}
     </div>
   );
 }

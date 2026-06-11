@@ -35,6 +35,13 @@ export const ArrowRight = createIcon(
   </>
 );
 
+export const ArrowLeft = createIcon(
+  <>
+    <path d="M19 12H5" />
+    <path d="m12 19-7-7 7-7" />
+  </>
+);
+
 export const BadgeCheck = createIcon(
   <>
     <path d="m16 3 1.4 2.8 3.1.4-2.2 2.2.5 3.1L16 10.8l-2.8 1.4.5-3.1-2.2-2.2 3.1-.4L16 3Z" />
@@ -280,6 +287,26 @@ export const X = createIcon(
   <>
     <path d="M18 6 6 18" />
     <path d="M6 6l12 12" />
+  </>
+);
+
+export const Sun = createIcon(
+  <>
+    <circle cx="12" cy="12" r="4" />
+    <path d="M12 2v2" />
+    <path d="M12 20v2" />
+    <path d="m4.93 4.93 1.41 1.41" />
+    <path d="m17.66 17.66 1.41 1.41" />
+    <path d="M2 12h2" />
+    <path d="M20 12h2" />
+    <path d="m6.34 17.66-1.41 1.41" />
+    <path d="m19.07 4.93-1.41 1.41" />
+  </>
+);
+
+export const Moon = createIcon(
+  <>
+    <path d="M12 3a6 6 0 0 0 9 7.5A9 9 0 1 1 12 3Z" />
   </>
 );
 

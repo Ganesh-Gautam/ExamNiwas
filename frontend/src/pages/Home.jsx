@@ -1,13 +1,14 @@
-import { ArrowRight } from "../lib/lucide-react.jsx";
+import { ArrowRight, BadgeCheck, BookOpen, ClipboardList, ShieldCheck } from "../lib/lucide-react.jsx";
 import { useSelector } from "react-redux";
 import { Link } from "react-router-dom";
 import homepageImage from "../assets/homepageImage.jpg";
+import { PageHero, SectionCard, pageWrapClass } from "../components/common/ui.jsx";
+
 
 export default function Home() {
   const { status, user } = useSelector((state) => state.auth);
 
   const role = user?.role;
-
   let buttonLink = "/register";
   let buttonText = "Create your account";
 
@@ -25,44 +26,62 @@ export default function Home() {
   }
 
   return (
-    <div className="space-y-14 px-4 py-10 sm:px-6 lg:px-10">
-      <section className="relative overflow-hidden rounded-4xl border border-zinc-200 bg-[linear-gradient(135deg,rgba(236,253,245,0.98),rgba(255,255,255,0.96))] p-10 shadow-[0_30px_80px_rgba(15,23,42,0.08)]">
-        <div className="absolute right-0 top-0 h-48 w-48 rounded-full bg-emerald-200/50 blur-3xl" />
-        <div className="relative grid gap-10 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
-          <div className="max-w-2xl">
-            <span className="inline-flex rounded-full bg-emerald-100 px-4 py-2 text-xs font-semibold uppercase tracking-[0.35em] text-emerald-700">
-              ExamNiwas
-            </span>
-            <h1 className="mt-6 text-4xl font-black tracking-tight text-zinc-950 sm:text-5xl">
+    <div className={`${pageWrapClass} page-enter pb-6`}>
+      <section className="grid gap-6 lg:grid-cols-[1.05fr_0.95fr]">
+        <div className="relative overflow-hidden rounded-4xl border border-white/70 bg-white/60 p-8 backdrop-blur-xl shadow-[0_25px_80px_rgba(15,23,42,0.08)] lg:p-12 dark:border-slate-700/70 dark:bg-slate-900/80">
+
+          <div className="absolute -left-24 -top-24 h-64 w-64 rounded-full bg-sky-300/20 blur-[100px]" />
+          <div className="absolute -bottom-24 -right-24 h-64 w-64 rounded-full bg-blue-300/20 blur-[100px]" />
+
+          <div className="relative z-10">
+
+            <span className="text-[11px] font-semibold uppercase tracking-[0.35em] text-slate-500">
               Build tests/exams faster and grade written work with confidence.
+            </span>
+            <h1 className="mt-6 text-5xl font-black tracking-tight text-slate-950 sm:text-6xl">
+              ExamNiwas
             </h1>
-            <p className="mt-6 text-sm leading-8 text-zinc-700 sm:text-xl">
-              An exam platform which provides student exams, written answer submission, teachers create tests/exams and evaluate students submissions.
+
+            <p className="mt-4 max-w-2xl text-sm leading-7 text-slate-600 sm:text-base">
+              An exam platform which provides student exams, written answer
+              submission, teachers create tests/exams and evaluate students
+              submissions.
             </p>
- 
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+            <div className="mt-30 flex flex-wrap items-center gap-4">
               <Link
                 to={buttonLink}
-                className="inline-flex items-center justify-center gap-2 rounded-full bg-zinc-950 px-6 py-3 text-sm font-semibold text-white transition hover:bg-zinc-800"
+                className="group inline-flex items-center gap-3 rounded-2xl bg-slate-800 px-6 py-4 font-semibold text-white shadow-lg transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_15px_35px_rgba(15,23,42,0.25)] dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700"
               >
                 {buttonText}
-                <ArrowRight size={16} />
-              </Link> 
+
+                <ArrowRight
+                  size={16}
+                  className="mt-1 ml-2 transition-transform duration-300 group-hover:translate-x-1.5"
+                />
+              </Link>
+
+              {!status && (
+                <Link
+                  to="/login"
+                  className="inline-flex items-center rounded-2xl border border-slate-200 bg-white px-6 py-4 font-semibold text-slate-700 transition-all duration-300 hover:-translate-y-1 hover:border-slate-300 hover:bg-slate-50 dark:border-slate-700/70 dark:bg-slate-900/78 dark:text-slate-200 dark:hover:border-slate-500 dark:hover:bg-slate-800"
+                >
+                  Sign in
+                </Link>
+              )}
+
             </div>
 
-
-          </div>
-
-          <div className="rounded-4xl border border-white/80 bg-white/90 p-8 shadow-[0_24px_60px_rgba(15,23,42,0.08)]">
-            <img
-              src={homepageImage}
-              alt="home page image"
-              className="w-full rounded-4xl object-cover"
-            />
           </div>
         </div>
+        <div className="relative overflow-hidden rounded-4xl border border-white/80 bg-white/50 sm:p-6 dark:border-slate-700/70 dark:bg-slate-900/75">
+          <div className="absolute inset-x-8 top-0 h-28 rounded-full bg-sky-200/40 blur-3xl" />
+          <img
+            src={homepageImage}
+            alt="ExamNiwas platform preview"
+            className="relative h-full min-h-80 w-full rounded-3xl object-cover"
+          />
+        </div>
       </section>
-
     </div>
   );
 }
