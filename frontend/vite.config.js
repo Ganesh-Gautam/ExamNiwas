@@ -19,7 +19,7 @@ export default defineConfig({
     port : 5173,
     proxy : {
       '/api' : {
-        target : 'https://exam-niwas.vercel.app/',
+        target : 'https://examniwas.vercel.app',
         changeOrigin : true,
       }
     }
