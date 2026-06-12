@@ -1,8 +1,10 @@
 import axios from "axios";
 import { extractApiErrorMessage } from "../utils/apiError.js";
 
+const baseURL = import.meta.env.VITE_API_URL || "https://exam-niwas.vercel.app/api/v1";
+
 const axiosInstance = axios.create({
-  baseURL: "https://exam-niwas.vercel.app/api/v1",
+  baseURL,
   withCredentials: true
 });
 

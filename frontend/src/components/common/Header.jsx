@@ -158,7 +158,7 @@ export default function Header({ theme, onToggleTheme }) {
                     className="h-10 w-10 rounded-full border border-white object-cover shadow-sm"
                   />
                 ) : (
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-emerald-500 to-sky-500 text-sm font-semibold uppercase text-white shadow-inner">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-linear-to-br from-emerald-500 to-sky-500 text-sm font-semibold uppercase text-white shadow-inner">
                     {userInitial}
                   </div>
                 )}
@@ -179,7 +179,7 @@ export default function Header({ theme, onToggleTheme }) {
                           className="h-14 w-14 rounded-2xl border-2 border-white object-cover shadow-md"
                         />
                       ) : (
-                        <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500 to-sky-500 text-lg font-semibold uppercase text-white shadow-md">
+                        <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-linear-to-br from-emerald-500 to-sky-500 text-lg font-semibold uppercase text-white shadow-md">
                           {userInitial}
                         </div>
                       )}
@@ -329,7 +329,7 @@ export default function Header({ theme, onToggleTheme }) {
                     {user?.avatar ? (
                       <img src={user.avatar} alt="Current profile" className="h-16 w-16 rounded-2xl border-2 border-white object-cover shadow-sm" />
                     ) : (
-                      <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500 to-sky-500 text-lg font-semibold uppercase text-white shadow-sm">
+                      <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-linear-to-br from-emerald-500 to-sky-500 text-lg font-semibold uppercase text-white shadow-sm">
                         {userInitial}
                       </div>
                     )}

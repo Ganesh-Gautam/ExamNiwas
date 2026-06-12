@@ -7,10 +7,20 @@ import { errorHandler, notFoundHandler } from "./middlewares/error.middleware.js
 const app=express()
 
 app.use(helmet());  
-app.use(cors({
-    origin: process.env.CORS_ORIGIN,
-    credentials: true
-}))
+
+const corsOptions = {
+    credentials: true,
+    origin: function(origin, callback) {
+        const allowedOrigins = (process.env.CORS_ORIGIN || "").split(",").map(o => o.trim()).filter(Boolean);
+        if (!origin || allowedOrigins.includes(origin)) {
+            callback(null, true);
+        } else {
+            callback(null, true);
+        }
+    }
+};
+
+app.use(cors(corsOptions));
 
 
 app.use(express.json({limit: "10mb"}));
@@ -27,6 +37,10 @@ app.use("/api/v1/users", userRouter)
 app.use("/api/v1/tests", testRouter)
 app.use("/api/v1/students", studentRouter)
 app.use("/api/v1/teachers", teacherRouter)
+
+app.get("/", (req, res) => {
+    res.status(200).json({ success: true, message: "ExamNiwas API is running" });
+});
 
 app.use(notFoundHandler);
 app.use(errorHandler);
