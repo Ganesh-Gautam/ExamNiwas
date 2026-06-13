@@ -2,7 +2,7 @@ import axios from "axios";
 import { extractApiErrorMessage } from "../utils/apiError.js";
 
 const axiosInstance = axios.create({
-  baseURL: "http://localhost:8000/api/v1",
+  baseURL: "https://examniwas.onrender.com/api/v1",
   withCredentials: true
 });
 

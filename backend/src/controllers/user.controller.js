@@ -96,9 +96,9 @@ const loginUser = asyncHandler(async (req, res)=>{
    const loggedInUser= await User.findById(user._id).select("-password -refreshToken");
 
    const options = {
-    httpOnly: true,
-    secure : process.env.NODE_ENV === "production",
-    sameSite: "lax"
+        httpOnly: true,
+        secure: true,
+        sameSite: "none"
    }
 
    return res
@@ -125,9 +125,9 @@ const logoutUser = asyncHandler(async(req, res)=>{
         }, {returnDocument: "after"}
     )
     const options = {
-    httpOnly: true,
-    secure : process.env.NODE_ENV === "production",
-    sameSite: "lax"
+        httpOnly: true,
+        secure: true,
+        sameSite: "none"
    }
    return res.status(200).clearCookie("accessToken", options).clearCookie("refreshToken", options)
    .json(new ApiResponse(200,{},"user logged out"))
