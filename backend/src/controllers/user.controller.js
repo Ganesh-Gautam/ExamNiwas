@@ -48,7 +48,7 @@ const registerUser = asyncHandler(async (req, res)=>{
             throw new ApiError(500, "Avatar file failed to upload");
         }
 
-        avatarUrl = avatar.url;
+        avatarUrl = avatar.secure_url;
     }
 
     const user= await User.create({
@@ -219,14 +219,14 @@ const updateUserAvatar = asyncHandler(async(req,res)=>{
     }
     const avatar = await uploadOnCloudinary(avatarLocalPath);
     const oldAvatar=req.user?.avatar;
-    if(!avatar.url){
+    if(!avatar.secure_url){
         throw new ApiError(400,"Error while uploading avatar")
     }
     
     const user=await User.findByIdAndUpdate(
         req.user?._id,
         {
-            $set:{avatar: avatar.url}
+            $set:{avatar: avatar.secure_url}
         },
         {returnDocument: "after"}
     ).select("-password")
