@@ -22,6 +22,8 @@ export default function StudentDashboard() {
     }
   }, [error]);
 
+  const now = new Date();
+
   const resolveTestId = (result) => result.testId?._id || result.testId || "";
 
   const attemptedTestIds = useMemo(
@@ -37,7 +39,9 @@ export default function StudentDashboard() {
     : "0.0";
 
   const completedCount = studentResults.length;
-  const upcomingCount = availableTests.filter((test) => new Date(test.startTime) > new Date()).length;
+  const upcomingCount = availableTests.filter((test) => new Date(test.startTime) > now).length;
+  const openTests = availableTests.filter((test) => new Date(test.startTime) <= now && new Date(test.endTime) >= now);
+  const nextOpenTest = openTests[0] || null;
 
   const getResultForTest = (testId) => studentResults.find((result) => resolveTestId(result) === testId);
 
@@ -54,8 +58,8 @@ export default function StudentDashboard() {
               <ClipboardList size={16} />
               View result history
             </Link>
-            {availableTests[0] ? (
-              <Link to={`/student/tests/${availableTests[0]._id}/attempt`} className={primaryButtonClass}>
+            {nextOpenTest ? (
+              <Link to={`/student/tests/${nextOpenTest._id}/attempt`} className={primaryButtonClass}>
                 <PlusCircle size={16} />
                 Start latest test
               </Link>
@@ -133,6 +137,11 @@ export default function StudentDashboard() {
                         <BookOpen size={16} />
                         View result
                       </Link>
+                    ) : new Date(test.startTime) > now ? (
+                      <button className={`${secondaryButtonClass} flex-1 cursor-not-allowed opacity-60`} type="button" disabled>
+                        <Clock3 size={16} />
+                        Scheduled
+                      </button>
                     ) : (
                       <Link to={`/student/tests/${test._id}/attempt`} className={`${primaryButtonClass} flex-1 bg-emerald-600 hover:bg-emerald-700`}>
                         <PlusCircle size={16} />

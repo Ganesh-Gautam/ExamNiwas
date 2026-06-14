@@ -5,7 +5,7 @@ import { Link, useParams } from "react-router-dom";
 import toast from "react-hot-toast";
 import { addTestQuestions, fetchTeacherTests, removeTestQuestion, updateTestQuestion } from "../../features/tests/testSlice.js";
 import { extractApiErrorMessage } from "../../utils/apiError.js";
-import { cn, EmptyState, PageHero, SectionCard, StatCard, inputClass, pageWrapClass, primaryButtonClass, secondaryButtonClass, surfaceClass, textareaClass } from "../../components/common/ui.jsx";
+import { cn, EmptyState, PageHero, SectionCard, StatCard, inputClass, pageWrapClass, primaryButtonClass, secondaryButtonClass, surfaceClass, textareaClass , noticeClass} from "../../components/common/ui.jsx";
 
 const createEmptyQuestion = () => ({
   type: "mcq",
@@ -174,13 +174,13 @@ export default function AddQuestions() {
       <PageHero
         eyebrow="Question Builder"
         title={selectedTest ? selectedTest.title : "Question authoring workspace"}
-        description="Create polished MCQ and written question blocks, manage saved items, and keep the authoring flow focused."
+        description="Create MCQs and written questions, manage saves, and refine your test paper before publishing."
         accent="emerald"
         actions={<Link to="/teacher" className={secondaryButtonClass}>Back to dashboard</Link>}
         stats={[
-          <StatCard key="subject" label="Subject" value={selectedTest?.subject || "Loading"} hint="Current test context." />,
-          <StatCard key="duration" label="Duration" value={selectedTest ? `${selectedTest.duration} min` : "--"} hint="Exam window length." />,
-          <StatCard key="saved" label="Saved Questions" value={existingQuestions.length} hint="Already attached to this test." />,
+          <StatCard key="subject" label="Subject" value={selectedTest?.subject || "Loading"}  />,
+          <StatCard key="duration" label="Duration" value={selectedTest ? `${selectedTest.duration} min` : "--"} />,
+          <StatCard key="saved" label="Saved Questions" value={existingQuestions.length} />,
         ]}
       />
 
@@ -302,7 +302,7 @@ export default function AddQuestions() {
         )}
       </SectionCard>
 
-      <SectionCard title="Compose New Questions" description="Use dynamic blocks to add MCQ or written items and then save them to the test in one action.">
+      <SectionCard title="Compose New Questions" >
         <form onSubmit={handleSubmit} className="space-y-5">
           {questions.map((question, questionIndex) => (
             <section key={`question-${questionIndex}`} className={cn(surfaceClass, "p-6 shadow-[0_16px_40px_rgba(15,23,42,0.04)]")}>

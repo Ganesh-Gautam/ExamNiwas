@@ -49,7 +49,6 @@ const getAvailableTests = asyncHandler(async (req, res) => {
   const tests = await Test.aggregate([
     {
       $match: {
-        startTime: { $lte: now },
         endTime: { $gte: now },
       },
     },
@@ -106,6 +105,13 @@ const getAvailableTests = asyncHandler(async (req, res) => {
             },
           },
         },
+        isUpcoming: { $gt: ["$startTime", now] },
+        isOpen: {
+          $and: [
+            { $lte: ["$startTime", now] },
+            { $gte: ["$endTime", now] },
+          ],
+        },
       },
     },
     {
@@ -121,11 +127,13 @@ const getAvailableTests = asyncHandler(async (req, res) => {
         negativeMarkingEnabled: 1,
         negativeMarkingValue: 1,
         randomizeQuestions: 1,
+        isUpcoming: 1,
+        isOpen: 1,
       },
     },
     {
       $sort: {
-        startTime: -1,
+        startTime: 1,
       },
     },
   ]);

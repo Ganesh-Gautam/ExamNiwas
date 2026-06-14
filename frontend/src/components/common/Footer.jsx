@@ -24,12 +24,12 @@ export default function Footer() {
             </ul>
           </div>
           <div>
-            <h2 className="text-lg font-semibold tracking-[-0.03em] text-slate-950"></h2>
-            <ul className="mt-3 space-y-2 text-sm text-slate-500">
-              <li><a href="#" className="hover:text-zinc-900">ExamNiwas.com</a></li>
-              <li><a href="#" className="hover:text-zinc-900">Twitter</a></li>
-              <li><a href="#" className="hover:text-zinc-900">GitHub</a></li>
-              <li><a href="#" className="hover:text-zinc-900">LinkedIn</a></li>
+            <h2 className="text-lg font-semibold tracking-[-0.03em] text-slate-950 dark:text-slate-100">Follow Us</h2>
+            <ul className="mt-3 space-y-2 text-sm text-slate-500 dark:text-slate-400">
+              <li><a href="#" className="hover:text-zinc-900 dark:hover:text-slate-100">examniwas.vercel.app</a></li>
+              <li><a href="#" className="hover:text-zinc-900 dark:hover:text-slate-100">Twitter</a></li>
+              <li><a href="#" className="hover:text-zinc-900 dark:hover:text-slate-100">GitHub</a></li>
+              <li><a href="#" className="hover:text-zinc-900 dark:hover:text-slate-100">LinkedIn</a></li>
 
             </ul>
           </div>

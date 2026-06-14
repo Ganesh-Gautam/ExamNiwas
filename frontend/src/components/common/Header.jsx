@@ -121,7 +121,7 @@ export default function Header({ theme, onToggleTheme }) {
 
   return (
     <header className="sticky top-0 z-30 px-3 pt-3 sm:px-6 lg:px-8">
-      <div className="mx-auto flex max-w-360 items-center justify-between gap-4 rounded-[1.75rem] border border-white/70 bg-white/72 px-4 py-4 shadow-[0_18px_40px_rgba(15,23,42,0.08)] backdrop-blur-xl sm:px-6 dark:border-slate-700/60 dark:bg-slate-950/80 dark:shadow-[0_18px_40px_rgba(15,23,42,0.15)]">
+      <div className="mx-auto flex flex-wrap max-w-360 items-center justify-between gap-4 rounded-[1.75rem] border border-white/70 bg-white/72 px-4 py-4 shadow-[0_18px_40px_rgba(15,23,42,0.08)] backdrop-blur-xl sm:px-6 dark:border-slate-700/60 dark:bg-slate-950/80 dark:shadow-[0_18px_40px_rgba(15,23,42,0.15)]">
         <Link to="/" className="flex items-center gap-3">
           <div className="flex h-11 w-11 items-center justify-center rounded-3xl border border-slate-200/70 bg-white shadow-sm">
             <img src={logoImage} alt="logo" className="h-8 w-8 object-contain" />
@@ -132,7 +132,7 @@ export default function Header({ theme, onToggleTheme }) {
           </div>
         </Link>
 
-        <nav className="flex items-center gap-3">
+        <nav className="flex items-center gap-3 flex-wrap">
           <button
             type="button"
             onClick={onToggleTheme}
@@ -158,7 +158,7 @@ export default function Header({ theme, onToggleTheme }) {
                     className="h-10 w-10 rounded-full border border-white object-cover shadow-sm"
                   />
                 ) : (
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-emerald-500 to-sky-500 text-sm font-semibold uppercase text-white shadow-inner">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-linear-to-br from-emerald-500 to-sky-500 text-sm font-semibold uppercase text-white shadow-inner">
                     {userInitial}
                   </div>
                 )}
@@ -179,7 +179,7 @@ export default function Header({ theme, onToggleTheme }) {
                           className="h-14 w-14 rounded-2xl border-2 border-white object-cover shadow-md"
                         />
                       ) : (
-                        <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500 to-sky-500 text-lg font-semibold uppercase text-white shadow-md">
+                        <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-linear-to-br from-emerald-500 to-sky-500 text-lg font-semibold uppercase text-white shadow-md">
                           {userInitial}
                         </div>
                       )}
@@ -255,13 +255,13 @@ export default function Header({ theme, onToggleTheme }) {
             <>
               <NavLink
                 to="/login"
-                className="rounded-full px-4 py-2 text-sm font-semibold text-slate-600 transition hover:bg-white hover:text-slate-950"
+                className="rounded-full px-3 py-1.5 sm:px-4 sm:py-2 text-sm font-semibold text-slate-600 transition hover:bg-white hover:text-slate-950"
               >
                 Login
               </NavLink>
               <NavLink
                 to="/register"
-                className="rounded-full bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition duration-200 hover:-translate-y-0.5 hover:bg-slate-800"
+                className="rounded-full bg-slate-900 px-3 py-1.5 sm:px-4 sm:py-2 text-sm font-semibold text-white transition duration-200 hover:-translate-y-0.5 hover:bg-slate-800"
               >
                 Create account
               </NavLink>
@@ -329,7 +329,7 @@ export default function Header({ theme, onToggleTheme }) {
                     {user?.avatar ? (
                       <img src={user.avatar} alt="Current profile" className="h-16 w-16 rounded-2xl border-2 border-white object-cover shadow-sm" />
                     ) : (
-                      <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500 to-sky-500 text-lg font-semibold uppercase text-white shadow-sm">
+                      <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-linear-to-br from-emerald-500 to-sky-500 text-lg font-semibold uppercase text-white shadow-sm">
                         {userInitial}
                       </div>
                     )}

@@ -1,6 +1,7 @@
 import { CalendarDays, ClipboardList, Clock3, Edit2, FileSpreadsheet, PenSquare, PlusCircle, Save, TimerReset, Trash2, X } from "../../lib/lucide-react.jsx";
 import { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { createPortal } from "react-dom";
 import { Link, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { createTeacherTest, deleteTeacherTest, fetchTeacherTests, updateTeacherTest } from "../../features/tests/testSlice.js";
@@ -65,6 +66,13 @@ export default function TeacherDashboard() {
       randomizeQuestions: Boolean(test.randomizeQuestions),
     });
   };
+
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
 
   const closeEditModal = () => {
     setEditingTestId(null);
@@ -283,78 +291,85 @@ export default function TeacherDashboard() {
         </SectionCard>
       </section>
 
-      {editingTestId ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 p-4 backdrop-blur-sm">
-          <div className={cn(surfaceClass, "w-full max-w-2xl p-6") }>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-500">Edit Test</p>
-                <h2 className="mt-2 text-2xl font-semibold tracking-[-0.03em] text-slate-950">Update exam settings</h2>
+      {editingTestId ? createPortal(
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/55 px-3 py-2 sm:px-6 sm:py-8">
+          <div className={cn(surfaceClass, "mx-auto w-full max-w-xl sm:max-w-2xl overflow-hidden rounded-4xl border border-white/70 bg-white shadow-[0_28px_80px_rgba(15,23,42,0.16)] dark:border-slate-700/80 dark:bg-slate-950/95")}>
+            <div className="flex min-h-96 max-h-[calc(100vh-2rem)] sm:max-h-[calc(100dvh-4rem)] flex-col">
+              <div className="flex items-start justify-between gap-4 border-b border-slate-200/80 px-5 py-5 dark:border-slate-700/80">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-500">Edit Test</p>
+                  <h2 className="mt-2 text-2xl font-semibold tracking-[-0.03em] text-slate-950 dark:text-slate-100">Update exam settings</h2>
+                </div>
+                <button onClick={closeEditModal} className="rounded-full p-2 text-slate-500 transition hover:bg-slate-100 dark:hover:bg-slate-800" type="button">
+                  <X size={22} />
+                </button>
               </div>
-              <button onClick={closeEditModal} className="rounded-full p-2 text-slate-500 transition hover:bg-slate-100" type="button">
-                <X size={22} />
-              </button>
-            </div>
 
-            <form onSubmit={handleUpdateTest} className="mt-6 grid gap-5">
-              <label>
-                <span className="text-sm font-semibold text-slate-700">Test title</span>
-                <input className={inputClass} name="title" value={editForm.title} onChange={handleEditFormChange} required />
-              </label>
-              <label>
-                <span className="text-sm font-semibold text-slate-700">Subject</span>
-                <input className={inputClass} name="subject" value={editForm.subject} onChange={handleEditFormChange} required />
-              </label>
-              <div className="grid gap-4 sm:grid-cols-3">
-                <label>
-                  <span className="text-sm font-semibold text-slate-700">Duration</span>
-                  <input className={inputClass} type="number" min="1" name="duration" value={editForm.duration} onChange={handleEditFormChange} required />
-                </label>
-                <label className="sm:col-span-2">
-                  <span className="text-sm font-semibold text-slate-700">Start time</span>
-                  <input className={inputClass} type="datetime-local" name="startTime" value={editForm.startTime} onChange={handleEditFormChange} required />
-                </label>
-              </div>
-              <label>
-                <span className="text-sm font-semibold text-slate-700">End time</span>
-                <input className={inputClass} type="datetime-local" name="endTime" value={editForm.endTime} onChange={handleEditFormChange} required />
-              </label>
-              <div className="rounded-3xl border border-amber-100 bg-amber-50/70 p-4">
-                <div className="grid gap-4">
-                  <label className="flex items-start gap-3">
-                    <input type="checkbox" name="negativeMarkingEnabled" checked={editForm.negativeMarkingEnabled} onChange={handleEditFormChange} className="mt-1 h-4 w-4 accent-amber-600" />
-                    <span>
-                      <span className="block text-sm font-semibold text-slate-900">Enable negative marking</span>
-                      <span className="block text-xs text-slate-500">Deduct marks on incorrect MCQ responses.</span>
-                    </span>
+              <div className="flex-1 overflow-y-auto px-5 py-4 sm:px-6 sm:py-5">
+                <form onSubmit={handleUpdateTest} className="grid gap-5">
+                  <label>
+                    <span className="text-sm font-semibold text-slate-700">Test title</span>
+                    <input className={inputClass} name="title" value={editForm.title} onChange={handleEditFormChange} required />
                   </label>
                   <label>
-                    <span className="text-sm font-semibold text-slate-700">Deduction per wrong answer</span>
-                    <input className={inputClass} type="number" min="0" step="0.25" name="negativeMarkingValue" value={editForm.negativeMarkingValue} onChange={handleEditFormChange} disabled={!editForm.negativeMarkingEnabled} />
+                    <span className="text-sm font-semibold text-slate-700">Subject</span>
+                    <input className={inputClass} name="subject" value={editForm.subject} onChange={handleEditFormChange} required />
                   </label>
-                  <label className="flex items-start gap-3">
-                    <input type="checkbox" name="randomizeQuestions" checked={editForm.randomizeQuestions} onChange={handleEditFormChange} className="mt-1 h-4 w-4 accent-amber-600" />
-                    <span>
-                      <span className="block text-sm font-semibold text-slate-900">Randomize question order</span>
-                      <span className="block text-xs text-slate-500">Shuffle sequence for student attempts.</span>
-                    </span>
+                  <div className="grid gap-4 sm:grid-cols-3">
+                    <label>
+                      <span className="text-sm font-semibold text-slate-700">Duration</span>
+                      <input className={inputClass} type="number" min="1" name="duration" value={editForm.duration} onChange={handleEditFormChange} required />
+                    </label>
+                    <label className="sm:col-span-2">
+                      <span className="text-sm font-semibold text-slate-700">Start time</span>
+                      <input className={inputClass} type="datetime-local" name="startTime" value={editForm.startTime} onChange={handleEditFormChange} required />
+                    </label>
+                  </div>
+                  <label>
+                    <span className="text-sm font-semibold text-slate-700">End time</span>
+                    <input className={inputClass} type="datetime-local" name="endTime" value={editForm.endTime} onChange={handleEditFormChange} required />
                   </label>
-                </div>
+                  <div className="rounded-3xl border border-amber-100 bg-amber-50/70 p-4">
+                    <div className="grid gap-4">
+                      <label className="flex items-start gap-3">
+                        <input type="checkbox" name="negativeMarkingEnabled" checked={editForm.negativeMarkingEnabled} onChange={handleEditFormChange} className="mt-1 h-4 w-4 accent-amber-600" />
+                        <span>
+                          <span className="block text-sm font-semibold text-slate-900">Enable negative marking</span>
+                          <span className="block text-xs text-slate-500">Deduct marks on incorrect MCQ responses.</span>
+                        </span>
+                      </label>
+                      <label>
+                        <span className="text-sm font-semibold text-slate-700">Deduction per wrong answer</span>
+                        <input className={inputClass} type="number" min="0" step="0.25" name="negativeMarkingValue" value={editForm.negativeMarkingValue} onChange={handleEditFormChange} disabled={!editForm.negativeMarkingEnabled} />
+                      </label>
+                      <label className="flex items-start gap-3">
+                        <input type="checkbox" name="randomizeQuestions" checked={editForm.randomizeQuestions} onChange={handleEditFormChange} className="mt-1 h-4 w-4 accent-amber-600" />
+                        <span>
+                          <span className="block text-sm font-semibold text-slate-900">Randomize question order</span>
+                          <span className="block text-xs text-slate-500">Shuffle sequence for student attempts.</span>
+                        </span>
+                      </label>
+                    </div>
+                  </div>
+                  <div className="flex flex-col gap-3 border-t border-slate-200/80 px-5 py-4 dark:border-slate-700/80 sm:px-6 sm:py-5">
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <button type="submit" disabled={isSaving} className={`${primaryButtonClass} w-full`}>
+                        <Save size={16} />
+                        {isSaving ? "Saving..." : "Save changes"}
+                      </button>
+                      <button type="button" onClick={closeEditModal} disabled={isSaving} className={`${secondaryButtonClass} w-full`}>
+                        <X size={16} />
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                </form>
               </div>
-              <div className="flex gap-3">
-                <button type="submit" disabled={isSaving} className={`${primaryButtonClass} flex-1`}>
-                  <Save size={16} />
-                  {isSaving ? "Saving..." : "Save changes"}
-                </button>
-                <button type="button" onClick={closeEditModal} disabled={isSaving} className={`${secondaryButtonClass} flex-1`}>
-                  <X size={16} />
-                  Cancel
-                </button>
-              </div>
-            </form>
+            </div>
           </div>
-        </div>
+        </div>,document.body
       ) : null}
+   
     </div>
   );
 }
